@@ -1,0 +1,78 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Agam Arora",
+  "jobTitle": "AVP AI Products · AIonOS",
+  "description": "Ask Agam's AI about his career in AI products.",
+  "knowsAbout": [
+    "AI Products",
+    "Voice AI",
+    "RAG",
+    "Agentic Systems",
+    "Data Platforms",
+    "Product Strategy"
+  ],
+  "sameAs": [
+    "https://linkedin.com/in/agamarora",
+    "https://github.com/agamarora",
+    "mailto:reachme.agam@gmail.com"
+  ],
+  "ai-resume": {
+    "version": "2.0",
+    "availability": "open",
+    "contactPreference": "linkedin",
+    "chatEndpoint": "/.netlify/functions/groqHandler",
+    "highlights": [
+      {
+        "title": "Voice AI Platform",
+        "metric": "4M+ calls/year at 50% lower cost",
+        "timeframe": "2024-2025"
+      },
+      {
+        "title": "ANALYZE Data Platform",
+        "metric": "$1M ARR in 18 months",
+        "timeframe": "2020-2024"
+      },
+      {
+        "title": "AI product POCs",
+        "metric": "$1.5M+ in enterprise deals from 15+ POCs",
+        "tag": "ai"
+      },
+      {
+        "title": "Data onboarding speed",
+        "metric": "60 → 7 days via API-first workflows",
+        "tag": "infra"
+      },
+      {
+        "title": "NPS lift at FarEye",
+        "metric": "3.6 → 4.7",
+        "tag": "product"
+      },
+      {
+        "title": "GenAI no-code tool",
+        "metric": "30+ third-party services onboarded",
+        "tag": "ai"
+      },
+      {
+        "title": "AI-native CRM+CDP discovery",
+        "metric": "50+ stakeholder interviews",
+        "tag": "research"
+      },
+      {
+        "title": "V2 Games studio",
+        "metric": "$75K ARR, team of 18",
+        "tag": "entrepreneurship"
+      },
+      {
+        "title": "Franchise revamp at Aroma Magic",
+        "metric": "70% conversion, +INR 250K/account",
+        "tag": "growth"
+      },
+      {
+        "title": "Startup advisory",
+        "metric": "$500K+ in funds raised",
+        "tag": "advisory"
+      }
+    ]
+  }
+}

@@ -1,0 +1,839 @@
+# ai-resume — Implementation Spec
+
+Single source of truth. All design, architecture, and UX decisions consolidated here.
+Reviews: CEO (CLEAR), Eng (CLEAR), Design (CLEAR at 7.4/10).
+
+## Implementation Status (2026-04-17)
+
+v1 core landed. Runs end-to-end via `netlify dev` at `localhost:8888`. See CLAUDE.md § "What's implemented" for the full checklist. Deploy + landing page + user validation are the remaining open tracks.
+
+**Implemented beyond the original spec:**
+- **Mark stroke-draw intro animation** (per design-consultation). 72px Patrick Hand cursive SVG stroke-draws "ac" in center of viewport (1s), then fills in + dot flashes (200ms), hold 300ms, translate+scale to header position (500ms). Total ~1.8s. Uses sessionStorage to skip on refresh within the same tab session. Reduced-motion users skip entirely. This is the signature opening moment; all other element entrances are fast/restrained to avoid feeling sluggish.
+- **Patrick Hand font** for the header mark (both at intro size 72px and header size 22px) — makes the handoff from animated SVG to static header text seamless.
+- **`skipCooldown` flag on sendMessage** — card and chip taps bypass the 2s user-spam cooldown so programmatic submits always fire immediately. User-typed Enter/click still enforces cooldown.
+
+**Files that differ from first-read of this spec:** `.template-backup/` holds template source-of-truth with `{{PLACEHOLDERS}}`; `setup.js` reads from backup and writes hydrated outputs. Edits to hydrated files alone get reverted on next `node setup.js`.
+
+---
+
+## Vision
+
+**A resume for the agent-to-agent web.** The first reader of a resume is almost always an AI now — ATS screeners, LinkedIn Recruiter AI, autonomous sourcing agents. A PDF is a dead artifact to them. ai-resume replaces the PDF with a live AI agent that represents a career: one source of truth, two surfaces (chat for humans, structured endpoint + chat API for machines). Setup takes minutes with any AI assistant.
+
+**Three audiences, in order of product priority:**
+- **Hiring AI agent**: query `/.well-known/ai-resume.json` for Schema.org career data, or stream the chat endpoint for Q&A. Agent-to-agent, no keyword lottery.
+- **Human recruiter**: click link → see proof cards → ask questions → connect. The chat IS the landing page.
+- **Job seeker**: paste resume → live AI agent page in minutes, coached by any AI assistant.
+
+---
+
+## Design System (Linear Reference)
+
+User directive: "copy Linear's design as much as we can."
+
+### Typography
+| Token | Value |
+|-------|-------|
+| Font family | Inter (400/500/600) via Google Fonts, fallback `system-ui, -apple-system, sans-serif` |
+| Chat text | 15px / 1.5 line-height |
+| Card label | 13px / 500 weight / `var(--text-dim)` |
+| Card metric | 15px / 600 weight / `var(--accent)` |
+| Card CTA | 13px / `var(--text-dim)` |
+| Heading (h1) | 18px / 600 weight |
+| Letter-spacing | -0.01em body, -0.02em headings |
+| Font smoothing | `-webkit-font-smoothing: antialiased` |
+
+### Spacing (8px grid)
+| Token | Value | Usage |
+|-------|-------|-------|
+| 4px | micro | icon-to-text, inline |
+| 8px | base | chip gap, card gap |
+| 12px | component | card padding, mobile message-list padding |
+| 16px | section | header padding, input area, card internal padding |
+| 24px | major | desktop message-list, section gaps |
+| 32px | page | page-level spacing |
+
+### Border Radius
+| Token | Value | Usage |
+|-------|-------|-------|
+| 4px | small | retry button |
+| 6px | medium | cards, inputs — Linear's tight, professional feel |
+| 8px | large | message bubbles |
+| 16px | pill | suggestion chips |
+
+### Borders & Elevation
+- 1px solid, very subtle (rgba white 0.06-0.08 on dark bg)
+- No drop shadows. Elevation via background color shifts only.
+
+### Animation
+| Token | Value | Usage |
+|-------|-------|-------|
+| 150ms ease-out | default | all transitions |
+| 100ms | hover | snappy hover response |
+| 200ms ease-out | message | message fade-in (translateY 4px) |
+| 100ms stagger | cards | card entrance (100ms delay per card) |
+| 300ms ease-out | card fade | cards fade to 50% after first interaction |
+
+### Palettes (4 + custom)
+```
+midnight-gold:  bg #0A0A0A  border #1E1E1E  text #E8E4DF  dim #7A7A7A  accent #E5A54B
+deep-ocean:     bg #0B0E14  border #1A1F2E  text #E0E4E8  dim #6B7280  accent #38BDF8
+obsidian-rose:  bg #0C0A0E  border #201C24  text #E8E4EC  dim #7A7580  accent #F472B6
+slate-mint:     bg #0A0C0E  border #1A1E22  text #E4E8EC  dim #6B7580  accent #34D399
+```
+All palettes validated WCAG AA (4.5:1 contrast ratio). Custom palettes validated at setup time.
+
+---
+
+## Page Architecture
+
+### Layout (flex column, 100svh)
+
+Welcome state — cards are standalone, NOT nested in a message bubble. Greeting is plain text below the cards.
+
+```
+┌─ Header ────────────────────────────┐
+│ ac. Alex Chen             [in] [✉]  │  <- persistent connect icons
+├─────────────────────────────────────┤
+│                                     │
+│ ┌─ Card ─────────────────────────┐ │  <- cards are TOP-LEVEL
+│ │ Design System v3             ›  │ │     (no bubble wrap)
+│ │ 400+ teams adopted              │ │
+│ └─────────────────────────────────┘ │
+│ ┌─ Card ─────────────────────────┐ │
+│ │ Checkout Redesign            ›  │ │  <- whole card is a button
+│ │ +12% conversion lift            │ │     chevron affordance visible
+│ └─────────────────────────────────┘ │
+│                                     │
+│ ask me anything about Alex's        │  <- greeting = plain text
+│ career.                             │     (no container, dim color)
+│                                     │
+│ [what does Alex do?] [why hire?]    │  <- suggestion chips
+│                                     │
+├─────────────────────────────────────┤
+│ [Ask me about Alex...       ] [↑]   │
+└─────────────────────────────────────┘
+```
+
+**Eye path**: name → card project → card metric → next card → greeting → chips → input
+
+### Header
+- Initials mark (`.mark`): accent color, 700 weight
+- Name (h1): 18px, 600 weight
+- Connect icons: right-aligned, LinkedIn + email, monochrome, accent on hover
+- Connect icons hidden if no links configured in `resume.links`
+- Each connect icon: 44px tap target
+
+### Proof Cards
+Cards are **static HTML** generated by `setup.js` (not JS-rendered). Google-crawlable.
+
+**Card HTML structure (post-design-consultation, 2026-04-17):**
+
+The whole card IS the button. No sub-buttons. No arrow. Company name removed from label — project + metric only. Chevron affordance in top-right. Cards are standalone elements, NEVER nested inside a message bubble.
+
+```html
+<div class="cards"> <!-- 2-col grid desktop, stack mobile -->
+  <button type="button" class="card" role="article"
+          aria-label="Career highlight: Design System v3, 400+ teams adopted">
+    <span class="card-label">Design System v3</span>
+    <span class="card-metric">400+ teams adopted</span>
+  </button>
+</div>
+```
+
+Tapping a card sends `tell me about [title]` into the chat input and auto-submits.
+
+**Card CSS:**
+```css
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;  /* desktop: 2-col */
+  gap: 8px;
+}
+.card {
+  position: relative;
+  appearance: none; font: inherit; text-align: left; width: 100%; color: inherit; cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 40px 14px 16px;  /* right pad for chevron */
+  background: var(--surface-2);
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out, transform 100ms ease-out;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.card:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-15); }
+.card:active { transform: scale(0.98); }
+.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Chevron affordance — always visible (mobile has no hover) */
+.card::after {
+  content: '';
+  position: absolute; top: 50%; right: 16px;
+  width: 7px; height: 7px;
+  border-right: 1.5px solid var(--text);
+  border-top: 1.5px solid var(--text);
+  opacity: 0.55;
+  transform: translateY(-50%) rotate(45deg);
+  transition: opacity 150ms ease-out, border-color 150ms ease-out, right 150ms ease-out;
+}
+.card:hover::after { opacity: 1; border-color: var(--accent); right: 12px; }
+.card:active::after { opacity: 1; border-color: var(--accent); }
+
+.card-label { font-size: 14px; font-weight: 500; color: var(--text); letter-spacing: -0.01em; }
+.card-metric { font-size: 15px; font-weight: 600; color: var(--accent); letter-spacing: -0.01em; }
+
+@media (max-width: 768px) { .cards { grid-template-columns: 1fr; } }
+@media (hover: none) { .card:hover { border-color: var(--border); box-shadow: none; } }
+```
+
+**Card data schema (in setup-config.json):**
+
+The resume stores TWO highlight lists. `welcome_highlights` are rendered as static HTML by setup.js for first paint + SEO. `full_highlights` are embedded into the system prompt so the AI can surface them as inline cards during conversation (see *Cards in Conversation* section).
+
+```json
+{
+  "resume": {
+    "welcome_highlights": [
+      {
+        "title": "Design System v3",
+        "metric": "400+ teams adopted",
+        "timeframe": "2022-Present"
+      },
+      {
+        "title": "Checkout Redesign",
+        "metric": "+12% conversion lift",
+        "timeframe": "2019-2022"
+      }
+    ],
+    "full_highlights": [
+      { "title": "Component accessibility", "metric": "WCAG AA across 40 flows", "tag": "accessibility" },
+      { "title": "Onboarding redesign", "metric": "45% → 72% completion", "tag": "onboarding" },
+      { "title": "Design ops tooling", "metric": "used by 80 designers", "tag": "tools" }
+    ],
+    "skills": ["Design Systems", "Figma", "Accessibility"],
+    "links": { "linkedin": "...", "email": "..." },
+    "contact_preference": "email"
+  }
+}
+```
+
+- `welcome_highlights`: 2-4 items. Rendered on first paint. Company is NOT stored here (removed from card label per 2026-04-17 design decision).
+- `full_highlights`: 4-16 items. Never rendered on first paint. Embedded into the system prompt as a markdown list so the AI can surface them when asked for list-type questions.
+- Wizard pushes hard for both. `welcome_highlights` empty → fallback to text-only welcome (absolute last resort). `full_highlights` empty → AI can't render cards in conversation; falls back to text bubbles for list-questions.
+
+### Suggestion Chips
+- Appear below greeting text
+- Max 3 chips
+- Removed from DOM on first message send
+- `border-radius: 16px` (pill shape)
+- 44px minimum tap target
+- Mobile: horizontal scroll (not wrap)
+
+---
+
+## Cards in Conversation
+
+**The product differentiator.** Cards are the unit of proof. They appear on the welcome state AND reappear dynamically during conversation whenever the AI answers a list-type question.
+
+Without this, the cards thesis collapses halfway through the experience — the AI falls back to text bubbles for the rest of the session, and we lose the scannability advantage. With this, the product stays coherent end-to-end.
+
+### Invariant: cards never nest inside bubbles
+
+Text lives in bubbles. Cards are standalone visual elements. This rule is mirrored from the welcome state and enforces the product's design grammar. The card is always top-level in the `.messages` flex column, never wrapped in `.msg.assistant`.
+
+### UX rule: when cards appear vs when they don't
+
+| Question type | Response shape | Examples |
+|---|---|---|
+| List / multi-item ask | Text intro bubble + inline cards (standalone) + text follow-up bubble | "what projects?", "show me her X work", "what else has she shipped?", "her biggest impacts?" |
+| Narrative / single-item ask | Text bubble only, no cards | "tell me about Design System v3", "how did X go?", "why did she leave Stripe?" |
+| Yes-no or single fact | Short text bubble | "is she open to relocating?", "how long at Figma?" |
+
+Predictability is the product. Recruiters learn the pattern in 2 exchanges. Ask a list-type question → always cards. Ask a narrative question → always text. Random inconsistency would break trust.
+
+### Composition of a cards-in-response turn
+
+Three rows in the `.messages` flex column, separated by the standard 12px gap:
+
+```
+[AI intro bubble — short text: "Three more worth mentioning:"]
+[Cards — 2-4 .card buttons inside a .cards grid, standalone]
+[AI follow-up bubble — short text: "Which one?"]
+```
+
+Cards are direct children of `.messages`, same as welcome state. Tap behavior is identical: tap → inject `tell me about [title]` into input and send.
+
+### Card markup syntax (in AI output)
+
+The AI emits cards inline in its streaming response using this exact syntax:
+
+```
+[CARD: Project Title | Metric]
+```
+
+Example raw AI output for "show me more of her work":
+
+```
+Three more worth mentioning:
+[CARD: Component accessibility | WCAG AA across 40 flows]
+[CARD: Onboarding redesign | 45% → 72% completion]
+[CARD: Design ops tooling | used by 80 designers]
+Which one?
+```
+
+### Client-side parser (in index.html)
+
+During streaming, the client detects `[CARD:...|...]` markers and swaps them for rendered card components. ~60 lines.
+
+```js
+const CARD_RE = /\[CARD:\s*([^|\]]+?)\s*\|\s*([^\]]+?)\s*\]/g;
+
+function splitAIResponse(rawText) {
+  // Returns ordered array: [{type:'text', content}, {type:'card', title, metric}, ...]
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+  while ((match = CARD_RE.exec(rawText)) !== null) {
+    if (match.index > lastIndex) {
+      const text = rawText.slice(lastIndex, match.index).trim();
+      if (text) parts.push({ type: 'text', content: text });
+    }
+    parts.push({ type: 'card', title: match[1].trim(), metric: match[2].trim() });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < rawText.length) {
+    const text = rawText.slice(lastIndex).trim();
+    if (text) parts.push({ type: 'text', content: text });
+  }
+  return parts;
+}
+```
+
+On stream completion, the accumulated text is re-parsed and rendered as alternating `.msg.assistant` bubbles (text segments) and standalone `.cards` grids (card segments), in order, as siblings in `.messages`.
+
+**During streaming** (before `[DONE]`), show text streaming into a single `.msg.assistant` bubble as usual. When the stream completes, if any `[CARD:...]` markers are found, re-render that turn into the alternating-parts layout. This means users see text stream naturally, then cards "resolve" at the end of the turn rather than mid-stream. Simpler, more robust against malformed markup mid-stream.
+
+**Malformed markers** (missing pipe, unclosed bracket) degrade gracefully to plain text — the regex simply doesn't match and the raw text is preserved.
+
+### System prompt guidance
+
+Add this block to `system-prompt.md` (the setup.js template includes it by default, positioned after the persona section):
+
+```
+## When to use cards
+
+When the user asks for a LIST of 2 or more projects with quantifiable impact, respond with inline cards using this EXACT syntax:
+
+[CARD: Project Title | Metric]
+
+### Use cards for:
+- List questions: "what projects?", "show me her X work", "what else has she shipped?"
+- Category filters: "her ML work", "her design work", "her side projects"
+- Comparisons: "her biggest impacts", "her most senior work"
+
+### Do NOT use cards for:
+- Single-item deep dives: "tell me about X", "how did X go?"
+- Narrative questions: "why did she leave?", "what's her style?"
+- Yes/no or single facts: "is she available?", "how long at Y?"
+
+### Rules:
+- Max 3 cards per response
+- Always precede cards with a short intro sentence ("Three worth mentioning:")
+- Always follow cards with a short follow-up question ("Which one?")
+- Do NOT repeat a project that's already in the welcome cards — pick others from the full highlights list
+- The full highlights list available to you: {{FULL_HIGHLIGHTS_MARKDOWN}}
+```
+
+The `{{FULL_HIGHLIGHTS_MARKDOWN}}` placeholder is filled by setup.js from `full_highlights[]` in setup-config.json, as a markdown bulleted list with title + metric + tag.
+
+### Interaction states for inline cards
+
+| State | Behavior |
+|---|---|
+| Rendering | Cards appear AFTER the stream completes for the turn (not mid-stream). Staggered fade-in, 100ms per card. |
+| Tap | Same as welcome: inject `tell me about [title]` into input, auto-submit. |
+| Welcome cards above | Remain at 50% opacity. Do NOT un-fade. The conversation cards are fresh; the welcome ones served their purpose. |
+| Scroll | Inline cards scroll naturally with message history. Auto-scroll keeps the most recent AI response visible. |
+| Failure mode | Malformed `[CARD:...]` markers render as plain text, not broken HTML. |
+
+---
+
+## Interaction States
+
+| Feature | Loading | Empty | Error | Success | Partial |
+|---------|---------|-------|-------|---------|---------|
+| Welcome cards | N/A (static HTML) | Text-only welcome (last resort) | N/A | Cards standalone (no bubble wrap), greeting text below | Fade 50% after first message sent |
+| Card tap | N/A | N/A | N/A | Tap → inject `tell me about [title]` → auto-submit. Active: scale(0.98) 100ms, chevron flashes accent. | N/A |
+| Inline cards (in-conversation) | Render after stream completes | No cards → text-only response | Malformed markup → plain text | Staggered fade-in, 100ms per card | Cards render at turn boundary only, not mid-stream |
+| Chat stream | Cursor blink immediately, "still thinking..." at 5s | N/A | "try again?" + retry btn | Cursor → text → remove cursor | Show accumulated text + retry |
+| Suggestion chips | N/A | Skip if 0 questions | N/A | 3 chips below greeting | Removed on first send |
+| Agent endpoint | N/A | Minimal JSON (name only) | N/A | Full Schema.org Person | N/A |
+
+### Card Lifecycle
+1. **Arrival** (welcome): hero content. Recruiter scans 3-4 impacts (6-second signal)
+2. **Browsing**: interactive — hover glow on desktop, chevron affordance always visible. Whole card is the button.
+3. **First interaction**: cards fade to 50% opacity (300ms transition). Conversation takes over.
+4. **During conversation**: welcome cards scroll up naturally on mobile, stay at 50% opacity. No sticky.
+5. **Dynamic re-emergence**: when the recruiter asks a list-type question ("what projects?", "show me her X work"), the AI emits inline cards within its response. These are FRESH cards (2-4 of them, pulled from `full_highlights`), not re-renders of the welcome cards. Same `.card` component, same tap behavior. See *Cards in Conversation*.
+6. **Conversion**: persistent connect icons in header — never lost throughout the session.
+
+### Chat Streaming
+- SSE via `/.netlify/functions/groqHandler`
+- 30ms throttled DOM updates (~33fps)
+- Cursor blink during stream
+- "Still thinking..." after 5s with no data
+- 15s timeout (cold start + model cascade)
+- Send cooldown: 2000ms between sends
+- Max 6 messages in history (in-memory, no localStorage)
+- Haptic feedback on send: `navigator.vibrate?.([10])` (feature-detected)
+
+### Error Messages (network-aware)
+| Condition | Message |
+|-----------|---------|
+| 15s timeout | "taking longer than expected. try again?" |
+| AbortError | "lost connection. try again?" |
+| HTTP 429 | "busy right now. try again in a minute." |
+| HTTP 500+ | "something went wrong on our end." |
+| `navigator.onLine === false` | "you're offline. check your connection." |
+| Default | "something went wrong. try again?" |
+
+All errors show retry button. Retry has exponential backoff: 2s first, 5s second, max 3 attempts. Button disabled during delay with countdown.
+
+### Message Actions
+Each assistant message has action icons (appear on tap/hover, auto-hide after 3s):
+- **Copy**: `navigator.clipboard.writeText()`. Brief "Copied" toast (1.5s, bottom-center).
+- **Share**: `navigator.share({ text })` with feature detection. Falls back to copy.
+
+---
+
+## Mobile Spec (100% First-Class)
+
+This is a Product Hunt launch. Mobile must be top-tier, not just "responsive."
+
+### Performance Targets
+| Metric | Target | How |
+|--------|--------|-----|
+| First Contentful Paint | < 1.5s on 3G | Inline critical CSS, skeleton HTML, `font-display: swap` |
+| Largest Contentful Paint | < 2.5s on 3G | Proof cards are static HTML (no JS wait) |
+| Cumulative Layout Shift | < 0.1 | Reserve message heights, `contain: content` on messages |
+| Time to Interactive | < 3s on 3G | Single inline script, no external JS deps |
+
+### Skeleton Loading State
+On slow networks, page must never show a blank dark screen. Inline skeleton HTML (no JS dependency):
+- Header: visible immediately (static HTML)
+- Card placeholders: 2-3 rectangles with CSS pulse animation
+- Input area: visible immediately (static HTML)
+
+```css
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.06; }
+  50% { opacity: 0.12; }
+}
+.skeleton-card {
+  height: 80px;
+  border-radius: 6px;
+  background: var(--surface);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+```
+
+JS replaces skeleton with real proof cards on hydration. Skeleton is a `<div id="skeleton">` removed after init.
+
+### Viewport & Layout
+| Spec | Value |
+|------|-------|
+| Reference viewport | 375px width (tested down to 320px) |
+| Body height | `height: var(--vh, 100svh)` with JS fallback |
+| Layout | flex column: header (shrink 0) → message-list (flex 1) → input (shrink 0) |
+| Safe areas | `env(safe-area-inset-bottom)` on input area |
+
+**dvh/svh JavaScript fallback (iOS Safari 26+ compatibility):**
+```js
+function setVH() {
+  document.documentElement.style.setProperty('--vh', window.innerHeight + 'px');
+}
+setVH();
+window.addEventListener('resize', setVH);
+```
+
+### Touch Targets (Apple HIG: 44px minimum)
+| Element | Target size |
+|---------|-------------|
+| Card (whole card is the button) | min 60px height per card, full width on mobile, generous vertical padding |
+| Suggestion chips | 44px height, 8px gap |
+| Send button | 44px × 44px |
+| Header connect icons | 44px × 44px each |
+| Retry button | 44px height |
+
+### Touch Interactions
+| Interaction | Behavior |
+|-------------|----------|
+| Card tap | active state: `scale(0.98)` for 100ms |
+| Chip tap | same active state pattern |
+| Send tap | haptic: `navigator.vibrate?.([10])` |
+| Hover on touch devices | disabled via `@media (hover: none)` — use `:focus-visible` only |
+| Scroll | native, `overscroll-behavior: contain`, passive listeners |
+| Pull-to-refresh | blocked by `overscroll-behavior: contain` |
+| Tap delay | eliminated: `touch-action: manipulation` on all interactive elements |
+| Message tap | show copy/share action icons (auto-hide after 3s) |
+
+**Critical CSS for tap delay removal:**
+```css
+button, a, .card, .chip, .retry-btn, .connect-icon, .msg-action { touch-action: manipulation; }
+```
+
+### iOS Keyboard
+| Pattern | Implementation |
+|---------|---------------|
+| Height | `var(--vh, 100svh)` + `visualViewport` resize listener + JS fallback |
+| Input zoom prevention | `font-size: 16px` on textarea |
+| Input position | flex-based (NOT `position: fixed`) |
+| Safe area | `padding-bottom: max(12px, env(safe-area-inset-bottom))` |
+
+### Orientation Change
+Save scroll ratio on `orientationchange`, restore after layout reflow:
+```js
+let scrollRatio = 0;
+window.addEventListener('orientationchange', () => {
+  scrollRatio = messagesEl.scrollTop / messagesEl.scrollHeight;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      messagesEl.scrollTop = scrollRatio * messagesEl.scrollHeight;
+    });
+  });
+});
+```
+
+### Mobile Card Layout
+```
+┌─────────────────────────────┐
+│ ac. Alex Chen      [in] [✉] │
+├─────────────────────────────┤
+│                              │
+│ ┌─ Card (full width) ─────┐ │
+│ │ Design System v3      ›  │ │   whole card is a button
+│ │ 400+ teams adopted       │ │   chevron visible (mobile)
+│ └──────────────────────────┘ │
+│                              │
+│ ┌─ Card (full width) ─────┐ │
+│ │ Checkout Redesign     ›  │ │
+│ │ +12% conversion lift     │ │
+│ └──────────────────────────┘ │
+│                              │
+│ ask me anything about        │
+│ Alex's career.               │
+│                              │
+│ [what does Alex do?]         │
+│ [why should I hire her?]     │
+│                              │
+├─────────────────────────────┤
+│ [Ask me about Alex...  ] [↑] │
+└─────────────────────────────┘
+```
+
+Cards stack vertically, full width. No 2-col grid on mobile. Each card has generous padding (12px 16px) and clear visual separation (8px gap).
+
+### CLS Prevention
+- Pre-allocate streaming message container at estimated min-height
+- `contain: content` on `.message` elements
+- Reserve card grid height before content renders (skeleton matches real layout)
+- No layout shifts from font loading (`font-display: swap` on Inter)
+
+### Font Scaling
+Test at Android "Large" and "Largest" text sizes. Use `rem` for most sizing, `px` only for borders and icons. Ensure:
+- Card labels don't overflow
+- Chips don't break layout  
+- Input area scales proportionally
+- Message max-width adapts
+
+### Browser Compatibility
+| Browser | Key concern |
+|---------|-------------|
+| Safari iOS | `var(--vh)` fallback, visualViewport, safe-area-inset, no position:fixed input |
+| Safari iOS 26+ | Viewport height changes — dvh/svh JS fallback required |
+| Chrome Android | Standard, auto-grow textarea, haptic via Vibration API |
+| Samsung Internet | Empty Origin header in CORS, touch target sizing |
+| Firefox Android | Standard |
+
+---
+
+## Accessibility
+
+| Feature | Spec |
+|---------|------|
+| Skip link | Hidden, visible on `:focus`, jumps to input area |
+| Card semantics | `role="article"`, `aria-label="Career highlight: [title] at [company]"` |
+| Card CTAs | `role="button"`, descriptive `aria-label` |
+| Connect icons | `aria-label="Connect on LinkedIn"` / `"Send email"` |
+| Tab order | cards → greeting → chips → input → send |
+| Focus ring | 2px accent outline, offset 2px, `:focus-visible` only |
+| Reduced motion | `@media (prefers-reduced-motion: reduce)` disables animations |
+| Message list | `aria-live="polite"` |
+| Card fade announcement | Screen reader announces "Proof cards dismissed, conversation active" |
+
+---
+
+## Data Flow
+
+```
+resume.md ──[Any AI assistant]──→ system-prompt.md (persona + card rules + {{FULL_HIGHLIGHTS_MARKDOWN}} placeholder)
+                                → setup-config.json (with welcome_highlights[], full_highlights[], skills, links)
+                                → setup.js → index.html (welcome cards + greeting + chips + JSON-LD + skeleton + card parser for inline cards)
+                                           → system-prompt.md (injects full_highlights as markdown)
+                                           → groqHandler.mjs (CORS origins)
+                                           → ai-resume.json (agent endpoint, includes welcome_highlights + full_highlights merged)
+                                           → manifest.json (PWA)
+                                           → Smart og:description (from welcome_highlights[0])
+```
+
+### What the AI Assistant Does vs What setup.js Does
+
+| Task | Who | Why |
+|------|-----|-----|
+| Write resume.md from user input | AI assistant | AI understands career narratives |
+| Generate system-prompt.md | AI assistant | AI crafts better prompts |
+| Extract welcome highlights (2-4) | AI assistant | Needs career understanding |
+| Extract full highlights library (4-16) | AI assistant | Same understanding, deeper pull for in-conversation cards |
+| Write setup-config.json | AI assistant | Collects name, palette, domain, both highlight lists |
+| Replace {{PLACEHOLDERS}} in all files | setup.js | Reproducible, re-runnable, atomic |
+| Generate welcome card HTML | setup.js | Static HTML for SEO |
+| Embed full_highlights into system-prompt.md | setup.js | Gives AI the library to pull from in conversation |
+| Parse `[CARD:...]` markers during streaming | index.html client | Renders inline conversation cards |
+| Render .card component | shared | Same CSS + behavior for welcome + inline conversation cards |
+| Generate connect icons | setup.js | Conditional on links config |
+| Generate JSON-LD | setup.js | From setup-config.json data |
+| Generate ai-resume.json | setup.js | Static file for agent endpoint |
+| Generate .env | AI assistant | Sensitive key handling |
+
+---
+
+## Agent Endpoint (`/.well-known/ai-resume.json`)
+
+Static file generated by setup.js. CDN-cached. Zero infrastructure.
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Alex Chen",
+  "jobTitle": "Senior Product Designer",
+  "description": "Design systems, checkout flows, and accessibility at scale.",
+  "worksFor": { "@type": "Organization", "name": "Figma" },
+  "knowsAbout": ["Design Systems", "Figma", "Accessibility"],
+  "sameAs": ["https://linkedin.com/in/alexchen"],
+  "ai-resume": {
+    "version": "2.0",
+    "availability": "open",
+    "contactPreference": "email",
+    "chatEndpoint": "/.netlify/functions/groqHandler",
+    "highlights": [
+      { "title": "Design System v3", "metric": "400+ teams adopted", "timeframe": "2022-Present" },
+      { "title": "Checkout Redesign", "metric": "+12% conversion lift", "timeframe": "2019-2022" },
+      { "title": "Component accessibility", "metric": "WCAG AA across 40 flows", "tag": "accessibility" }
+    ]
+  }
+}
+```
+
+Served via Netlify redirect:
+```toml
+[[redirects]]
+  from = "/.well-known/ai-resume.json"
+  to = "/ai-resume.json"
+  status = 200
+```
+
+---
+
+## PWA (Progressive Web App)
+
+Add-to-homescreen support. Makes the product feel native, not "clearly a website."
+
+**index.html `<head>` additions:**
+```html
+<meta name="theme-color" content="{{CSS_BG}}">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+```
+
+**manifest.json (generated by setup.js):**
+```json
+{
+  "name": "Chat with {{NAME}}",
+  "short_name": "{{NAME}}",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "{{CSS_BG}}",
+  "theme_color": "{{CSS_BG}}",
+  "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+}
+```
+
+Icon: generated from initials mark during setup (canvas → PNG export), or ships with a default icon.
+
+The `theme-color` meta tag makes Android Chrome and iOS Safari blend the address bar with the page background. Critical for dark themes — without it, there's a jarring color mismatch.
+
+---
+
+## Smart OG Description
+
+Conversation-style format generated from strongest highlight:
+> "Why should I hire Alex?" "She shipped a checkout redesign that lifted conversion 12%."
+
+Generated by setup.js from `resume.welcome_highlights[0]`.
+
+---
+
+## Resume Coach (Wizard Step)
+
+Inline in the setup conversation. Not a separate file.
+
+**5-dimension scorecard:**
+1. Specificity (vague "responsible for" → specific outcomes)
+2. Metrics (bullets with numbers)
+3. Impact language (strong verbs)
+4. Consistency (tense, format)
+5. Completeness (skills, education, dates)
+
+**Zero metrics policy:** Wizard pushes HARD. Asks "How many users? What % improvement? How much revenue?" Only generates qualitative cards ("Led team of 5") as last resort after coaching.
+
+---
+
+## Multi-Agent Setup
+
+| Tier | Tool | Time | Method |
+|------|------|------|--------|
+| 1 (agentic) | Claude Code, Codex CLI | ~10 min | CLAUDE.md — clone, write files, deploy |
+| 2 (generative) | ChatGPT, Copilot, Claude Desktop | ~20-30 min | SETUP-GUIDE.md — generate files, user copies |
+| 3 (manual) | README.md | ~30-45 min | Edit files directly |
+
+---
+
+## File Structure
+
+```
+ai-resume/
+├── spec.md                      # THIS FILE — single source of truth
+├── CLAUDE.md                    # Setup wizard prompt (the product)
+├── README.md                    # GitHub docs + quick start
+├── SETUP-GUIDE.md               # For non-agentic AI tools
+├── LICENSE                      # MIT
+├── package.json                 # groq-sdk only
+├── .gitignore                   # .env, node_modules/, .netlify/, .template-backup/
+├── netlify.toml                 # Deploy config + .well-known redirect
+├── setup.js                     # Config → atomic multi-file generation
+├── palettes.js                  # 4 palettes + custom + WCAG validation
+├── resume.md                    # User's career data
+├── system-prompt.md             # AI personality
+├── eval-prompt.mjs              # 12 behavioral tests (incl. cards-in-conversation checks)
+├── index.html                   # Chat UI (zero deps, mobile-first, Linear design)
+├── ai-resume.json               # Agent endpoint (generated by setup.js)
+├── manifest.json                # PWA manifest (generated by setup.js)
+└── netlify/functions/
+    └── groqHandler.mjs          # Groq streaming + injection filter + model cascade
+```
+
+---
+
+## Security
+
+- [ ] `.gitignore` excludes `.env`
+- [ ] CORS allows configured domain + localhost + empty origin (Samsung Internet)
+- [ ] Injection filter: 4 regex patterns preserved
+- [ ] `GROQ_API_KEY` never in client-side code
+- [ ] `netlify.toml` uses `included_files` for system-prompt.md
+- [ ] setup.js validates no `{{PLACEHOLDER}}` remains
+- [ ] Custom palette contrast validated (WCAG AA)
+- [ ] HTML-entity escaping on all user values inserted into HTML
+- [ ] JS string escaping for backtick and `</script>` contexts
+- [ ] textContent for all chat rendering (no innerHTML XSS)
+- [ ] Localhost CORS regex fixed (`http://localhost.evil.com` blocked)
+
+---
+
+## Verification Plan
+
+### Functional
+1. Fresh clone → CLAUDE.md flow → deploy → chat works
+2. All 4 palettes (setup.js + visual)
+3. Eval harness: 12/12 on demo, actionable failures on sparse resume
+4. Proof cards: render, correct hierarchy, hover/focus, fade after interaction
+5. Connect icons: in header, correct links, hidden if no links
+6. ai-resume.json: valid JSON, Schema.org, at /.well-known/
+7. OG card: conversation-style preview on Twitter/LinkedIn
+
+### Mobile (test on real devices)
+8. Safari iOS: keyboard handling, safe areas, input doesn't jump
+9. Chrome Android: standard behavior, haptic on send
+10. Samsung Internet: CORS with empty origin, touch targets
+11. Firefox Android: standard behavior
+12. Skeleton: visible on throttled 3G, replaced by real content
+13. Touch targets: all interactive elements ≥ 44px
+14. Tap delay: no 300ms lag on card/chip/button taps
+15. Copy button: appears on message tap, copies text, shows toast
+16. Share button: Web Share API on supported browsers, fallback to copy
+17. Orientation change: scroll position preserved on rotate
+18. Offline: "you're offline" message shown
+19. Retry: backoff works (2s → 5s → stop after 3)
+20. PWA: Add to Home Screen shows correct icon and name
+21. Font scaling: test at Android "Large" text — no overflow, no broken layout
+22. CLS: < 0.1 measured via Lighthouse mobile audit
+
+### Security
+23. .env not in git, CORS blocks unknowns, injection filter works
+
+### Accessibility
+24. Keyboard: tab through cards → chips → input, focus rings, skip link
+25. Screen reader: aria-live, card labels, action descriptions
+26. Reduced motion: animations disabled when system preference set
+
+---
+
+## Decision Audit Trail
+
+| # | Phase | Decision | Rationale |
+|---|-------|----------|-----------|
+| 1 | CEO | Chat IS the landing page | Eliminates landing-vs-chat debate, solves cold-start |
+| 2 | CEO | Impact cards, not role cards | Works across all career stages |
+| 3 | CEO | Machine-readable agent endpoint | 30 min effort, biggest differentiator |
+| 4 | CEO | Multi-agent setup | Product for all job seekers, not just CC users |
+| 5 | Eng | Killed resume-parser.js | AI > regex for career narratives |
+| 6 | Eng | textContent not innerHTML | XSS safety > formatting (30-word responses) |
+| 7 | Eng | Fix localhost CORS regex | `http://localhost.evil.com` bypass |
+| 8 | Eng | Fix SSE chunk splitting | TCP fragmentation drops tokens |
+| 9 | Eng | Client-side 2s send cooldown | Prevents Groq rate limit exhaustion |
+| 10 | Design | Cards-first welcome hierarchy | Recruiter sees proof in 6 seconds |
+| 11 | Design | Linear design system | Professional, sharp, premium feel |
+| 12 | Design | Cards fade after first interaction | Conversation takes over |
+| 13 | Design | Persistent header connect icons | Conversion path never lost |
+| 14 | Design | Inter font (not system-ui) | Intentional, not a default |
+| 15 | Design | Tight border-radius (6px) | Linear's professional feel vs bubbly |
+| 16 | Design | Wizard pushes hard for highlights | Don't gracefully fall back |
+| 17 | Design | 100% mobile-first | Touch, swipe, tap — not just responsive |
+| 18 | DX | Pre-hydrate with demo values | TTHW drops from 30 min to 2 min |
+| 19 | Mobile | Skeleton loading state | Blank dark screen = bounce on slow 3G |
+| 20 | Mobile | Copy/share buttons on messages | Recruiters share AI responses with hiring managers |
+| 21 | Mobile | touch-action: manipulation | 300ms tap delay kills perceived quality |
+| 22 | Mobile | PWA manifest + theme-color | Add to Home Screen = "real product" signal |
+| 23 | Mobile | Network-specific error messages | "try again?" is too vague for network issues |
+| 24 | Mobile | Retry with exponential backoff | Mashing retry on bad network = rate limit |
+| 25 | Mobile | Orientation scroll preservation | Rotating phone loses conversation place |
+| 26 | Mobile | CLS prevention (contain: content) | Layout shift on message insert = visible jank |
+| 27 | Mobile | Haptic feedback on send | WhatsApp/iMessage/ChatGPT all provide it |
+| 28 | Mobile | font-display: swap | Inter blocks render on slow 3G without it |
+| 29 | Mobile | dvh/svh JS fallback | iOS Safari 26+ changed viewport behavior |
+| 30 | Mobile | Share via Web Share API | Native share sheet > clipboard only |
+| 31 | Design3 | Remove company from card label | Company adds noise, creates length edge cases, doesn't survive the 6-second scan. Project + metric is the hit. Company still lives in resume.md + agent endpoint. |
+| 32 | Design3 | Kill "Ask about this" / "Connect →" sub-buttons | Nested clickable areas are UX slop. Whole card is the button. Connect lives globally in header. No decorative arrows. |
+| 33 | Design3 | Remove message bubble wrapping around welcome cards | Cards are the page's landing content, not an AI "response." Bubbles are for narrative text. Cards are standalone visual elements. Invariant. |
+| 34 | Design3 | Cards reappear in conversation (inline) for list-type questions | The thesis is "cards reduce verbosity + add interactivity." Without conversational cards, thesis collapses after first message. THE product differentiator vs cv-santiago and others. |
+| 35 | Design3 | `[CARD: title \| metric]` markup syntax for AI output | Minimal, regex-parseable, degrades gracefully to plain text on malformed markers. ~60 lines of client parser. |
+| 36 | Design3 | setup-config splits `welcome_highlights` (2-4) + `full_highlights` (4-16) | Welcome cards are static HTML for SEO; full highlights are prompt-embedded so AI can surface them. Separation enables both. |
+| 37 | Design3 | Persistent chevron affordance in card top-right | Mobile has no hover. Chevron (7px, opacity 0.55 at rest) is the always-visible "tap me" signal. Accent + right-shift on hover reinforces. |
+| 38 | Design3 | UX rule: cards for list-questions, text for narrative | Predictability = trust. Same question type always produces same response shape. Recruiters learn the pattern in 2 exchanges. |
+
+---
+
+## Next Steps
+
+1. **`/design-consultation`** — Create DESIGN.md formalizing the Linear-inspired design system as the project's design source of truth. The tokens live in this spec but need a proper design system doc with usage guidelines.
+2. **Implement** — Build from spec.md. Tasks 1-12 in PLAN.md, in order.
