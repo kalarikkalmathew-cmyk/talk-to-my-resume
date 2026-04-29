@@ -33,9 +33,9 @@ const MODELS = [
   "llama-3.3-70b-versatile",
 ];
 
-// https://ai-resume-demo.netlify.app — replaced by setup.js
+// https://kalarikkalmathew-cmyk-ai-resume.netlify.app — replaced by setup.js
 const ALLOWED_ORIGINS = new Set([
-  "https://ai-resume-demo.netlify.app",
+  "https://kalarikkalmathew-cmyk-ai-resume.netlify.app",
 ]);
 
 function isOriginAllowed(origin) {
@@ -93,7 +93,7 @@ export default async function handler(req) {
     }
 
     if (isInjectionAttempt(input)) {
-      return new Response(JSON.stringify({ text: "nice try. ask me about Agam." }), {
+      return new Response(JSON.stringify({ text: "nice try. ask me about Mathew." }), {
         status: 200,
         headers: { ...cors, "Content-Type": "application/json" },
       });

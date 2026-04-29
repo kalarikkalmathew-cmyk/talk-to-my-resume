@@ -1,10 +1,10 @@
 {
-  "name": "Chat with Agam Arora",
-  "short_name": "Agam",
+  "name": "Chat with Mathew Kalarikkal",
+  "short_name": "Mathew",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0B0E14",
-  "theme_color": "#0B0E14",
+  "background_color": "#0A0C0E",
+  "theme_color": "#0A0C0E",
   "icons": [
     {
       "src": "/icon-192.png",

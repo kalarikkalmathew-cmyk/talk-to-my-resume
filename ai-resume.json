@@ -1,77 +1,128 @@
 {
   "@context": "https://schema.org",
   "@type": "Person",
-  "name": "Agam Arora",
-  "jobTitle": "AVP AI Products · AIonOS",
-  "description": "Ask Agam's AI about his career in AI products.",
+  "name": "Mathew Kalarikkal",
+  "jobTitle": "Business Operations, Strategy, and Monetization Leader",
   "knowsAbout": [
-    "AI Products",
-    "Voice AI",
-    "RAG",
-    "Agentic Systems",
-    "Data Platforms",
-    "Product Strategy"
+    "Business Operations",
+    "Marketplace Strategy",
+    "Monetization",
+    "Financial Modeling",
+    "Data Analysis",
+    "Stakeholder Management",
+    "SQL",
+    "VBA"
   ],
   "sameAs": [
-    "https://linkedin.com/in/agamarora",
-    "https://github.com/agamarora",
-    "mailto:reachme.agam@gmail.com"
+    "https://www.linkedin.com/in/matt-kalarikkal/",
+    "https://github.com/kalarikkalmathew-cmyk",
+    "mailto:kalarikkalmathew@gmail.com"
   ],
   "ai-resume": {
     "version": "2.0",
     "availability": "open",
-    "contactPreference": "linkedin",
+    "contactPreference": "email",
     "chatEndpoint": "/.netlify/functions/groqHandler",
     "highlights": [
       {
-        "title": "Voice AI Platform",
-        "metric": "4M+ calls/year at 50% lower cost",
+        "title": "improved zonal contribution margin",
+        "metric": "35-40% lift",
+        "timeframe": "2025-2026"
+      },
+      {
+        "title": "lifted ads monetization efficiency",
+        "metric": "ARPO +40% in 5 months",
+        "timeframe": "2025-2026"
+      },
+      {
+        "title": "modeled warranty revenue impact",
+        "metric": "$50M projected over 5 years",
         "timeframe": "2024-2025"
       },
       {
-        "title": "ANALYZE Data Platform",
-        "metric": "$1M ARR in 18 months",
-        "timeframe": "2020-2024"
+        "title": "built inside-sales engine",
+        "metric": "$70K early deals closed",
+        "timeframe": "2024-2025"
       },
       {
-        "title": "AI product POCs",
-        "metric": "$1.5M+ in enterprise deals from 15+ POCs",
-        "tag": "ai"
+        "title": "ran zonal ops portfolio",
+        "metric": "500 brands, 20 key accounts, 8 cities",
+        "tag": "ops"
       },
       {
-        "title": "Data onboarding speed",
-        "metric": "60 → 7 days via API-first workflows",
-        "tag": "infra"
+        "title": "improved key-brand ad performance",
+        "metric": "ads ROI +25%",
+        "tag": "monetization"
       },
       {
-        "title": "NPS lift at FarEye",
-        "metric": "3.6 → 4.7",
-        "tag": "product"
-      },
-      {
-        "title": "GenAI no-code tool",
-        "metric": "30+ third-party services onboarded",
-        "tag": "ai"
-      },
-      {
-        "title": "AI-native CRM+CDP discovery",
-        "metric": "50+ stakeholder interviews",
-        "tag": "research"
-      },
-      {
-        "title": "V2 Games studio",
-        "metric": "$75K ARR, team of 18",
-        "tag": "entrepreneurship"
-      },
-      {
-        "title": "Franchise revamp at Aroma Magic",
-        "metric": "70% conversion, +INR 250K/account",
+        "title": "improved menu conversion",
+        "metric": "order-through rate +35%",
         "tag": "growth"
       },
       {
-        "title": "Startup advisory",
-        "metric": "$500K+ in funds raised",
-        "tag": "advisory"
+        "title": "cut platform burn",
+        "metric": "Zomato burn -34%",
+        "tag": "unit economics"
+      },
+      {
+        "title": "drove festive campaign performance",
+        "metric": "app opens and menu opens +30%",
+        "tag": "marketing"
+      },
+      {
+        "title": "launched festive ads product",
+        "metric": "ads monetization +15%",
+        "tag": "product"
+      },
+      {
+        "title": "expanded ads penetration",
+        "metric": "55% to 80%",
+        "tag": "merchant growth"
+      },
+      {
+        "title": "reduced merchant escalations",
+        "metric": "50% drop",
+        "tag": "ops"
+      },
+      {
+        "title": "grew order value",
+        "metric": "+30% order value, +22% net order value",
+        "tag": "growth"
+      },
+      {
+        "title": "built 5-year revenue plan",
+        "metric": "$25M revenue path by year 5",
+        "tag": "finance"
+      },
+      {
+        "title": "modeled Indonesia JV",
+        "metric": "$100M proposed JV",
+        "tag": "strategy"
+      },
+      {
+        "title": "shaped warranty pricing",
+        "metric": "$50M projected 5-year impact",
+        "tag": "commercial"
+      },
+      {
+        "title": "structured enterprise bids",
+        "metric": "$15M+ RFPs",
+        "tag": "pricing"
+      },
+      {
+        "title": "built growth models",
+        "metric": "$5M projected incremental revenue",
+        "tag": "strategy"
+      },
+      {
+        "title": "closed early sales",
+        "metric": "$70K revenue",
+        "tag": "sales"
+      },
+      {
+        "title": "led audit and readiness work",
+        "metric": "$300M manufacturer, $150M Series D",
+        "tag": "audit"
       }
     ]
   }
