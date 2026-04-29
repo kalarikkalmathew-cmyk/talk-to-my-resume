@@ -24,8 +24,8 @@ try {
   SYSTEM_REMINDER = "";
 }
 
-const MAX_INPUT_LENGTH = 200;
-const MAX_HISTORY_MSG_LENGTH = 500;
+const MAX_INPUT_LENGTH = 6000;
+const MAX_HISTORY_MSG_LENGTH = 1200;
 const MAX_COMPLETION_TOKENS = 100;
 
 const MODELS = [
@@ -71,6 +71,39 @@ function isInjectionAttempt(text) {
   return INJECTION_PATTERNS.some((p) => p.test(text));
 }
 
+function looksLikeJobFitAnalysis(text) {
+  const lc = text.toLowerCase();
+  const fitSignals = [
+    "good fit",
+    "right fit",
+    "fit for this role",
+    "fit for this job",
+    "job description",
+    "job spec",
+    "role description",
+    "requirements",
+    "responsibilities",
+    "qualifications",
+    "what more can",
+    "how would {{FIRST_NAME}} fit",
+  ];
+  const jdSignals = [
+    "about the role",
+    "key responsibilities",
+    "what you'll do",
+    "what you will do",
+    "what you bring",
+    "must have",
+    "nice to have",
+    "who we are",
+    "we are looking for",
+    "the role",
+  ];
+  if (fitSignals.some((s) => lc.includes(s))) return true;
+  if (jdSignals.some((s) => lc.includes(s))) return true;
+  return text.split("\n").length >= 6 && text.length >= 400;
+}
+
 export default async function handler(req) {
   const origin = req.headers.get("origin") || "";
   const cors = corsHeaders(origin);
@@ -100,6 +133,17 @@ export default async function handler(req) {
     }
 
     const messages = [{ role: "system", content: SYSTEM_PROMPT }];
+    if (looksLikeJobFitAnalysis(input)) {
+      messages.push({
+        role: "system",
+        content: [
+          "This is a recruiter fit-analysis request.",
+          "Break the answer into: role summary, {{FIRST_NAME}} profile, overlap/synergies, gaps or risks, verdict, and what more {{FIRST_NAME}} can bring to the table.",
+          "Be optimistic first, then honest. If fit is weak, suggest adjacent roles in the same company where {{FIRST_NAME}} is a stronger match.",
+          "Use bullets when helpful and keep the answer structured.",
+        ].join(" "),
+      });
+    }
 
     // Conversation history (last 6 messages)
     const history = Array.isArray(body.history) ? body.history.slice(-6) : [];
@@ -113,10 +157,10 @@ export default async function handler(req) {
       }
     }
 
-    messages.push({ role: "user", content: input });
     if (SYSTEM_REMINDER) {
       messages.push({ role: "system", content: SYSTEM_REMINDER });
     }
+    messages.push({ role: "user", content: input });
 
     let stream;
     let usedModel;
@@ -133,15 +177,12 @@ export default async function handler(req) {
         break;
       } catch (err) {
         console.error(`${model}: ${err.constructor.name} — ${err.message}`);
-        // Continue cascade on recoverable errors
+        // Cascade only on rate limits, timeouts, and server errors — not 4xx client errors
         if (
           err.constructor.name === "RateLimitError" ||
           err.constructor.name === "APIConnectionTimeoutError" ||
-          err.constructor.name === "BadRequestError" ||
-          err.constructor.name === "NotFoundError" ||
           err.status === 429 ||
-          err.status === 400 ||
-          err.status === 404
+          (err.status >= 500 && err.status < 600)
         ) {
           continue;
         }

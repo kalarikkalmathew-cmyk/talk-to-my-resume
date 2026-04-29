@@ -220,6 +220,39 @@
       margin-top: 4px;
     }
 
+    .profile-panel {
+      width: 100%;
+      max-width: 620px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 2px;
+      margin-bottom: 2px;
+    }
+    .profile-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+    }
+    .profile-label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .profile-pills {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+    .profile-chip {
+      padding: 8px 12px;
+      font-size: 12px;
+      min-height: 0;
+    }
+
     /* Cards grid (welcome + inline) */
     .cards {
       display: grid;
@@ -586,6 +619,7 @@
       {{WELCOME_CARDS_HTML}}
     </div>
     <p class="welcome-text">{{WELCOME_MESSAGE}}</p>
+    {{PROFILE_PANEL_HTML}}
   </main>
 
   <div class="input-area">
@@ -761,7 +795,7 @@
     const SEND_COOLDOWN_MS = 2000;
     const MAX_RETRIES = 3;
     const RETRY_DELAYS = [2000, 5000];
-    const CARD_RE = /\[CARD:\s*([^|\]]+?)\s*\|\s*([^\]]+?)\s*\]/g;
+    const CARD_RE = /\[CARD:\s*([^|[\]]+?)\s*\|\s*([^[\]]+?)\s*\]/g;
 
     // === STATE ===
     const history = [];
@@ -866,6 +900,20 @@
     }
     wireCardHandlers(welcomeCardsEl);
 
+    function wireQuestionHandlers(root) {
+      root.querySelectorAll("[data-question]").forEach((button) => {
+        if (button._questionWired) return;
+        button._questionWired = true;
+        button.addEventListener("click", () => {
+          const question = button.dataset.question || button.textContent?.trim() || "";
+          if (!question) return;
+          inputEl.value = question;
+          sendMessage({ skipCooldown: true });
+        });
+      });
+    }
+    wireQuestionHandlers(document);
+
     // === SUGGESTION CHIPS ===
     let chipContainer = null;
     if (Array.isArray(AUTO_QUESTIONS) && AUTO_QUESTIONS.length > 0) {
@@ -875,14 +923,12 @@
         const chip = document.createElement("button");
         chip.type = "button";
         chip.className = "suggestion-chip";
+        chip.dataset.question = q;
         chip.textContent = q;
-        chip.addEventListener("click", () => {
-          inputEl.value = q;
-          sendMessage({ skipCooldown: true });
-        });
         chipContainer.appendChild(chip);
       });
       messagesEl.appendChild(chipContainer);
+      wireQuestionHandlers(chipContainer);
     }
 
     // === AUTO-TYPE placeholder rotation ===

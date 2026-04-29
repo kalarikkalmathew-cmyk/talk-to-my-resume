@@ -232,6 +232,39 @@
       margin-top: 4px;
     }
 
+    .profile-panel {
+      width: 100%;
+      max-width: 620px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 2px;
+      margin-bottom: 2px;
+    }
+    .profile-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+    }
+    .profile-label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .profile-pills {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+    .profile-chip {
+      padding: 8px 12px;
+      font-size: 12px;
+      min-height: 0;
+    }
+
     /* Cards grid (welcome + inline) */
     .cards {
       display: grid;
@@ -639,6 +672,38 @@
       </button>
     </div>
     <p class="welcome-text">Ask about roles, wins, or fit.</p>
+        <section class="profile-panel" aria-label="Skills and fit helpers">
+      <div class="profile-block">
+        <span class="profile-label">Skills</span>
+        <div class="profile-pills">
+<button type="button" class="suggestion-chip profile-chip" data-question="how does Mathew show strength in Business Operations?">Business Operations</button>
+<button type="button" class="suggestion-chip profile-chip" data-question="how does Mathew show strength in Marketplace Strategy?">Marketplace Strategy</button>
+<button type="button" class="suggestion-chip profile-chip" data-question="how does Mathew show strength in Monetization?">Monetization</button>
+<button type="button" class="suggestion-chip profile-chip" data-question="how does Mathew show strength in Financial Modeling?">Financial Modeling</button>
+<button type="button" class="suggestion-chip profile-chip" data-question="how does Mathew show strength in Data Analysis?">Data Analysis</button>
+<button type="button" class="suggestion-chip profile-chip" data-question="how does Mathew show strength in Stakeholder Management?">Stakeholder Management</button>
+<button type="button" class="suggestion-chip profile-chip" data-question="how does Mathew show strength in SQL?">SQL</button>
+<button type="button" class="suggestion-chip profile-chip" data-question="how does Mathew show strength in VBA?">VBA</button>
+        </div>
+      </div>
+      <div class="profile-block">
+        <span class="profile-label">Aspirations</span>
+        <div class="profile-pills">
+<button type="button" class="suggestion-chip profile-chip" data-question="what roles fit Mathew best for business operations leadership?">business operations leadership</button>
+<button type="button" class="suggestion-chip profile-chip" data-question="what roles fit Mathew best for strategy and monetization?">strategy and monetization</button>
+<button type="button" class="suggestion-chip profile-chip" data-question="what roles fit Mathew best for founder&#39;s office / chief of staff?">founder&#39;s office / chief of staff</button>
+<button type="button" class="suggestion-chip profile-chip" data-question="what roles fit Mathew best for consumer internet growth?">consumer internet growth</button>
+        </div>
+      </div>
+      <div class="profile-block">
+        <span class="profile-label">Job fit</span>
+        <div class="profile-pills">
+          <button type="button" class="suggestion-chip profile-chip" data-question="is Mathew a good fit for this role?">paste a JD</button>
+          <button type="button" class="suggestion-chip profile-chip" data-question="is Mathew a good fit for this role?">fit check</button>
+          <button type="button" class="suggestion-chip profile-chip" data-question="what more can Mathew bring to the table for this role?">what more can he bring?</button>
+        </div>
+      </div>
+    </section>
   </main>
 
   <div class="input-area">
@@ -814,7 +879,7 @@
     const SEND_COOLDOWN_MS = 2000;
     const MAX_RETRIES = 3;
     const RETRY_DELAYS = [2000, 5000];
-    const CARD_RE = /\[CARD:\s*([^|\]]+?)\s*\|\s*([^\]]+?)\s*\]/g;
+    const CARD_RE = /\[CARD:\s*([^|[\]]+?)\s*\|\s*([^[\]]+?)\s*\]/g;
 
     // === STATE ===
     const history = [];
@@ -919,6 +984,20 @@
     }
     wireCardHandlers(welcomeCardsEl);
 
+    function wireQuestionHandlers(root) {
+      root.querySelectorAll("[data-question]").forEach((button) => {
+        if (button._questionWired) return;
+        button._questionWired = true;
+        button.addEventListener("click", () => {
+          const question = button.dataset.question || button.textContent?.trim() || "";
+          if (!question) return;
+          inputEl.value = question;
+          sendMessage({ skipCooldown: true });
+        });
+      });
+    }
+    wireQuestionHandlers(document);
+
     // === SUGGESTION CHIPS ===
     let chipContainer = null;
     if (Array.isArray(AUTO_QUESTIONS) && AUTO_QUESTIONS.length > 0) {
@@ -928,14 +1007,12 @@
         const chip = document.createElement("button");
         chip.type = "button";
         chip.className = "suggestion-chip";
+        chip.dataset.question = q;
         chip.textContent = q;
-        chip.addEventListener("click", () => {
-          inputEl.value = q;
-          sendMessage({ skipCooldown: true });
-        });
         chipContainer.appendChild(chip);
       });
       messagesEl.appendChild(chipContainer);
+      wireQuestionHandlers(chipContainer);
     }
 
     // === AUTO-TYPE placeholder rotation ===

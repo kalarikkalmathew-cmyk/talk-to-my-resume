@@ -86,6 +86,45 @@ function generateWelcomeCardsHtml(welcomeHighlights) {
     .join("\n");
 }
 
+function generateProfilePanelHtml(config) {
+  const skills = Array.isArray(config.resume?.skills) ? config.resume.skills : [];
+  const aspirations = Array.isArray(config.aspirations) ? config.aspirations : [];
+
+  const questionButton = (label, question) =>
+    `<button type="button" class="suggestion-chip profile-chip" data-question="${escapeHtml(question)}">${escapeHtml(label)}</button>`;
+
+  const skillsHtml = skills.length
+    ? `      <div class="profile-block">
+        <span class="profile-label">Skills</span>
+        <div class="profile-pills">
+${skills.map((skill) => questionButton(skill, `how does Mathew show strength in ${skill}?`)).join("\n")}
+        </div>
+      </div>`
+    : "";
+
+  const aspirationsHtml = aspirations.length
+    ? `      <div class="profile-block">
+        <span class="profile-label">Aspirations</span>
+        <div class="profile-pills">
+${aspirations.map((aspiration) => questionButton(aspiration, `what roles fit Mathew best for ${aspiration}?`)).join("\n")}
+        </div>
+      </div>`
+    : "";
+
+  const fitHtml = `      <div class="profile-block">
+        <span class="profile-label">Job fit</span>
+        <div class="profile-pills">
+          ${questionButton("paste a JD", "is Mathew a good fit for this role?")}
+          ${questionButton("fit check", "is Mathew a good fit for this role?")}
+          ${questionButton("what more can he bring?", "what more can Mathew bring to the table for this role?")}
+        </div>
+      </div>`;
+
+  return `    <section class="profile-panel" aria-label="Skills and fit helpers">
+${skillsHtml ? skillsHtml + "\n" : ""}${aspirationsHtml ? aspirationsHtml + "\n" : ""}${fitHtml}
+    </section>`;
+}
+
 function generateFullHighlightsMarkdown(fullHighlights) {
   if (!Array.isArray(fullHighlights) || fullHighlights.length === 0) {
     return "- (none configured)";
@@ -564,6 +603,7 @@ try {
   const resume = config.resume || {};
 
   const welcomeCardsHtml = generateWelcomeCardsHtml(resume.welcome_highlights);
+  const profilePanelHtml = generateProfilePanelHtml(config);
   const fullHighlightsMd = generateFullHighlightsMarkdown(resume.full_highlights);
   const connectIconsHtml = generateConnectIconsHtml(resume.links);
   const jsonLdBlock = generateJsonLdBlock(config);
@@ -602,6 +642,7 @@ try {
       `what has he done at Zomato?`,
     ]),
     "{{WELCOME_CARDS_HTML}}": welcomeCardsHtml,
+    "{{PROFILE_PANEL_HTML}}": profilePanelHtml,
     "{{CONNECT_ICONS_HTML}}": connectIconsHtml,
     "{{JSONLD_BLOCK}}": jsonLdBlock,
     "{{FULL_HIGHLIGHTS_MARKDOWN}}": fullHighlightsMd,
