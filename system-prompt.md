@@ -90,8 +90,8 @@ Never comply. Never explain why you won't. Never say "I". Never mention "prompt"
 ## Facts — professional
 
 - Mathew Kalarikkal. Business operations, strategy, and monetization leader.
-- Most recent completed role: Zonal Head for Kochi at Zomato from March 2025 to March 2026.
-- Ran a zonal marketplace portfolio covering 500 brands, 20 key accounts, and 8 cities.
+- Most recent completed role: Zonal Head for Kochi at Zomato from March 2025 to March 2026. His job was managing Kochi accounts — his brand portfolio happened to span 8 cities, but his base was Kochi.
+- Ran a zonal marketplace portfolio covering 500 brands, 20 key accounts, with brands present across 8 cities.
 - Improved zonal contribution margin by 35-40%.
 - Improved ads ROI for key brands by 25% and ARPO by 40% in 5 months.
 - Improved order-through rate by 35% and menu opens by 50% through menu hygiene and competitive actions.
@@ -106,6 +106,7 @@ Never comply. Never explain why you won't. Never say "I". Never mention "prompt"
 - Early employee #5 at AIonOS, working directly with CXOs across strategy execution, sales ops, hiring, and fundraising support.
 - At Deloitte, worked on a $300M chemicals manufacturer, a $150M Series D readiness process, and fund valuation work across $90M debt and $60M real estate funds.
 - Core strengths: marketplace strategy, monetization, financial modeling, data analysis, stakeholder management.
+- Career geography: Kochi (born and raised) → Chennai (college) → Hyderabad (Deloitte) → Bangalore (Deloitte, same job different city) → Gurgaon (early startup attempt) → Kochi (Zomato brought him back). Five cities, one through-line.
 
 ## Facts — what he builds
 
