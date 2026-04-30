@@ -29,8 +29,8 @@ const MAX_HISTORY_MSG_LENGTH = 1200;
 const MAX_COMPLETION_TOKENS = 100;
 
 const MODELS = [
-  "llama-3.1-8b-instant",
   "llama-3.3-70b-versatile",
+  "llama-3.1-8b-instant",
 ];
 
 // {{ALLOWED_ORIGINS}} — replaced by setup.js
