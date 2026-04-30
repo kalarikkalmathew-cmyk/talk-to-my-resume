@@ -357,6 +357,22 @@
       outline-offset: 2px;
     }
 
+    /* Follow-up chips (rendered below AI responses) */
+    .followup-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 4px 0 8px 2px;
+      max-width: 85%;
+    }
+    .followup-chip {
+      font-size: 12px;
+      padding: 7px 12px;
+      min-height: 36px;
+      opacity: 0.85;
+    }
+    .followup-chip:hover { opacity: 1; }
+
     /* Messages */
     .msg {
       max-width: 85%;
@@ -792,11 +808,12 @@
     const API_URL = "/.netlify/functions/groqHandler";
     const MAX_HISTORY = 6;
     const STREAM_THROTTLE_MS = 30;
-    const REQUEST_TIMEOUT_MS = 15000;
+    const REQUEST_TIMEOUT_MS = 25000;
     const SEND_COOLDOWN_MS = 2000;
     const MAX_RETRIES = 3;
     const RETRY_DELAYS = [2000, 5000];
     const CARD_RE = /\[CARD:\s*([^|[\]]+?)\s*\|\s*([^[\]]+?)\s*\]/g;
+    const CHIP_RE = /\[CHIP:\s*([^|[\]]+?)\s*\|\s*([^[\]]+?)\s*\]/g;
 
     // === STATE ===
     const history = [];
@@ -1093,6 +1110,35 @@
       return frag;
     }
 
+    // === CHIP EXTRACTOR ===
+    function extractChips(raw) {
+      const chips = [];
+      let m;
+      CHIP_RE.lastIndex = 0;
+      while ((m = CHIP_RE.exec(raw)) !== null) {
+        chips.push({ label: m[1].trim(), question: m[2].trim() });
+      }
+      const cleanText = raw.replace(CHIP_RE, "").trim();
+      return { chips, cleanText };
+    }
+
+    function renderFollowupChips(chips) {
+      if (!chips.length) return;
+      const row = document.createElement("div");
+      row.className = "followup-chips";
+      chips.forEach((c) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "suggestion-chip followup-chip";
+        btn.textContent = c.label;
+        btn.dataset.question = c.question;
+        row.appendChild(btn);
+      });
+      messagesEl.appendChild(row);
+      wireQuestionHandlers(row);
+      scrollToBottom();
+    }
+
     // === ERROR MAPPING ===
     function errorMessageFor(err, status) {
       if (navigator.onLine === false) return "you're offline. check your connection.";
@@ -1257,20 +1303,25 @@
       streaming.el.classList.remove("thinking-state");
       streaming.cursor.remove();
 
-      const parts = splitAIResponse(accumulated);
+      // Strip follow-up chip markers before display; store clean text in history
+      const { chips, cleanText } = extractChips(accumulated);
+
+      const parts = splitAIResponse(cleanText);
       const hasCards = parts.some((p) => p.type === "card");
 
       if (hasCards) {
         // Replace streaming bubble with parsed parts
-        const frag = renderCardParts(parts, accumulated);
+        const frag = renderCardParts(parts, cleanText);
         streaming.el.replaceWith(frag);
       } else {
         // Text-only: keep the streaming bubble, finalize text, add actions
-        streaming.textSpan.textContent = accumulated;
-        addAssistantActions(streaming.el, () => accumulated);
+        streaming.textSpan.textContent = cleanText;
+        addAssistantActions(streaming.el, () => cleanText);
       }
 
-      history.push({ role: "assistant", content: accumulated });
+      renderFollowupChips(chips);
+
+      history.push({ role: "assistant", content: cleanText });
       while (history.length > MAX_HISTORY) history.shift();
 
       isStreaming = false;
