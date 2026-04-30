@@ -325,6 +325,8 @@
     }
 
     .cards.faded .card { opacity: 0.5; }
+    /* 3-card layout: last card spans both columns so there's no orphaned gap */
+    #welcome-cards .card:last-child:nth-child(odd) { grid-column: 1 / -1; }
 
     /* Suggestion chips */
     .suggestions {
@@ -557,6 +559,25 @@
     .intro-stage svg { overflow: visible; }
     .intro-stage.hidden { opacity: 0; }
 
+    /* Intro tagline — fades in below the mark after the animation flies to header */
+    .intro-tagline {
+      position: fixed;
+      left: 50%;
+      top: calc(50% + 70px);
+      transform: translateX(-50%);
+      font-family: "Patrick Hand", cursive;
+      font-size: 15px;
+      color: var(--text-dim);
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 400ms ease-out;
+      z-index: 39;
+      white-space: nowrap;
+      letter-spacing: -0.01em;
+    }
+    .intro-tagline.visible { opacity: 1; }
+
     /* Toast */
     .toast {
       position: fixed;
@@ -632,9 +653,7 @@
       <p class="hero-role">{{HERO_ROLE}}</p>
       <p class="hero-tagline">{{TAGLINE}}</p>
     </section>
-    <div class="cards" id="welcome-cards">
-      {{WELCOME_CARDS_HTML}}
-    </div>
+    <div class="cards" id="welcome-cards"></div>
     <p class="welcome-text">{{WELCOME_MESSAGE}}</p>
     {{PROFILE_PANEL_HTML}}
   </main>
@@ -659,6 +678,7 @@
   <div class="intro-stage" id="intro-stage" aria-hidden="true">
     <svg id="intro-mark-svg" width="280" height="100" viewBox="0 0 280 100"></svg>
   </div>
+  <p class="intro-tagline" id="intro-tagline" aria-hidden="true">This is an AI that knows {{FIRST_NAME}}. Ask it anything.</p>
 
   <script>
     {{DEMO_BANNER_JS}}
@@ -783,6 +803,8 @@
 
               setTimeout(() => {
                 stage.classList.add("hidden");
+                const introTagline = document.getElementById("intro-tagline");
+                if (introTagline) introTagline.classList.add("visible");
               }, MOVE_DURATION);
 
               setTimeout(() => {
@@ -918,6 +940,46 @@
       });
     }
     wireCardHandlers(welcomeCardsEl);
+
+    // === STARTER QUESTION CARDS (3 random from pool of 6, no session repeats) ===
+    (function() {
+      const POOL = [
+        "what did he build?",
+        "400km solo — why?",
+        "his take on pedigree",
+        "why no MBA?",
+        "what's Io?",
+        "what does he read?",
+      ];
+      const SK = "ai-resume-seen-qs";
+      let seen;
+      try { seen = JSON.parse(sessionStorage.getItem(SK)) || []; } catch { seen = []; }
+      if (!Array.isArray(seen) || seen.length + 3 > POOL.length) seen = [];
+
+      const avail = POOL.map((_, i) => i).filter(i => !seen.includes(i));
+      const picked = [];
+      while (picked.length < 3 && avail.length > 0) {
+        const r = Math.floor(Math.random() * avail.length);
+        picked.push(avail.splice(r, 1)[0]);
+      }
+      try { sessionStorage.setItem(SK, JSON.stringify([...seen, ...picked])); } catch {}
+
+      welcomeCardsEl.innerHTML = "";
+      picked.forEach(i => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "card";
+        btn.setAttribute("role", "article");
+        btn.setAttribute("aria-label", POOL[i]);
+        btn.dataset.question = POOL[i];
+        const label = document.createElement("span");
+        label.className = "card-label";
+        label.textContent = POOL[i];
+        btn.appendChild(label);
+        welcomeCardsEl.appendChild(btn);
+      });
+      wireCardHandlers(welcomeCardsEl);
+    })();
 
     function wireQuestionHandlers(root) {
       root.querySelectorAll("[data-question]").forEach((button) => {
@@ -1155,6 +1217,11 @@
       welcomeCardsEl?.classList.add("faded");
       if (chipContainer && chipContainer.parentNode) chipContainer.remove();
       cardsFaded = true;
+      const introTagline = document.getElementById("intro-tagline");
+      if (introTagline) {
+        introTagline.style.opacity = "0";
+        setTimeout(() => introTagline.remove(), 400);
+      }
     }
 
     // === SEND ===
