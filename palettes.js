@@ -3,6 +3,15 @@
 // Each palette defines 5 base colors; all rgba variants are derived automatically
 
 export const palettes = {
+  "warm-editorial": {
+    name: "Warm Editorial",
+    description: "Kosha-inspired warm near-black with gold accents.",
+    bg: "#0F0E0C",
+    border: "#2C2820",
+    text: "#F5F2EA",
+    textDim: "#8C8C8C",
+    accent: "#B38B4D",
+  },
   "midnight-gold": {
     name: "Midnight Gold",
     description: "The original. Dark editorial with warm gold accents.",
