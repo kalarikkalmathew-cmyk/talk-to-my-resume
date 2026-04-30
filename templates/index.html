@@ -96,21 +96,32 @@
       height: 44px;
       display: inline-flex;
       align-items: center;
+      animation: fadeUp 600ms ease-out 0ms backwards;
     }
     .chat-header .mark-small::after {
       content: '.';
       color: var(--accent);
       margin-left: 1px;
     }
-    /* Welcome hero — vertically centered in the viewport as one composed block.
-       Only rendered in the welcome state. */
+    /* Entrance animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .welcome-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      width: 100%;
+      max-width: 520px;
+      margin: auto;
+    }
     .welcome-hero {
       text-align: center;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      flex: 1;
     }
     .welcome-hero .hero-name {
       font-family: 'Playfair Display', Georgia, serif;
@@ -120,12 +131,14 @@
       color: var(--text);
       margin: 0;
       line-height: 1.1;
+      animation: fadeUp 500ms ease-out 300ms backwards;
     }
     .welcome-hero .hero-role {
       font-size: 14px;
       color: var(--text-dim);
       letter-spacing: -0.01em;
       margin: 2px 0 0;
+      animation: fadeUp 500ms ease-out 450ms backwards;
     }
     .welcome-hero .hero-role:empty { display: none; }
     .welcome-hero .hero-tagline {
@@ -135,8 +148,9 @@
       letter-spacing: -0.02em;
       line-height: 1.25;
       max-width: 32ch;
-      margin: 4px 0 0;
+      margin: 0;
       opacity: 0.85;
+      animation: fadeUp 500ms ease-out 600ms backwards;
     }
     @media (max-width: 640px) {
       .welcome-hero .hero-name { font-size: 24px; }
@@ -301,10 +315,12 @@
       flex-direction: column;
       gap: 10px;
       width: 100%;
-      max-width: 520px;
-      margin-top: 16px;
+      margin-top: 32px;
     }
-    .cat-row { display: flex; flex-direction: column; gap: 8px; }
+    .cat-row { display: flex; flex-direction: column; gap: 8px; animation: fadeUp 500ms ease-out backwards; }
+    .cat-row:nth-child(1) { animation-delay: 750ms; }
+    .cat-row:nth-child(2) { animation-delay: 850ms; }
+    .cat-row:nth-child(3) { animation-delay: 950ms; }
     .cat-btn {
       appearance: none;
       font: inherit;
@@ -480,6 +496,7 @@
       display: flex;
       align-items: flex-end;
       gap: 8px;
+      animation: fadeUp 500ms ease-out 1000ms backwards;
     }
     .input-area textarea {
       flex: 1;
@@ -644,12 +661,14 @@
   </header>
 
   <main class="messages" id="messages" aria-live="polite" aria-label="Conversation with {{FIRST_NAME}}'s AI">
-    <section class="welcome-hero" id="welcome-hero" aria-label="About {{HERO_NAME}}">
-      <h1 class="hero-name">{{HERO_NAME}}</h1>
-      <p class="hero-role">{{HERO_ROLE}}</p>
-      <p class="hero-tagline">{{TAGLINE}}</p>
-    </section>
-    <div class="cat-nav" id="cat-nav" aria-label="Explore topics"></div>
+    <div class="welcome-content">
+      <section class="welcome-hero" id="welcome-hero" aria-label="About {{HERO_NAME}}">
+        <h1 class="hero-name">{{HERO_NAME}}</h1>
+        <p class="hero-role">{{HERO_ROLE}}</p>
+        <p class="hero-tagline">{{TAGLINE}}</p>
+      </section>
+      <div class="cat-nav" id="cat-nav" aria-label="Explore topics"></div>
+    </div>
   </main>
 
   <div class="input-area">
