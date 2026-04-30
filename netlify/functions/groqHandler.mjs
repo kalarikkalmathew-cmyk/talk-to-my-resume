@@ -26,7 +26,7 @@ try {
 
 const MAX_INPUT_LENGTH = 6000;
 const MAX_HISTORY_MSG_LENGTH = 1200;
-const MAX_COMPLETION_TOKENS = 100;
+const MAX_COMPLETION_TOKENS = 300;
 
 const MODELS = [
   "llama-3.3-70b-versatile",
