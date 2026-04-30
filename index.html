@@ -1249,9 +1249,30 @@
     // === FADE WELCOME CARDS ===
     function fadeWelcomeCards() {
       if (cardsFaded) return;
-      welcomeCardsEl?.classList.add("faded");
-      if (chipContainer && chipContainer.parentNode) chipContainer.remove();
       cardsFaded = true;
+      if (chipContainer && chipContainer.parentNode) chipContainer.remove();
+
+      // Fade out welcome cards + welcome text, then collapse height so the
+      // messages div overflows and becomes scrollable after the first exchange.
+      const wt = messagesEl.querySelector(".welcome-text");
+      [welcomeCardsEl, wt].forEach(el => {
+        if (!el) return;
+        el.style.transition = "opacity 250ms ease-out";
+        el.style.opacity = "0";
+      });
+      setTimeout(() => {
+        [welcomeCardsEl, wt].forEach(el => {
+          if (!el) return;
+          const h = el.offsetHeight;
+          el.style.height = h + "px";
+          el.offsetHeight; // force reflow before transition
+          el.style.transition = "height 350ms ease-out, margin 350ms ease-out";
+          el.style.height = "0";
+          el.style.overflow = "hidden";
+          el.style.margin = "0";
+        });
+      }, 270);
+
       const introTagline = document.getElementById("intro-tagline");
       if (introTagline) {
         introTagline.style.opacity = "0";
