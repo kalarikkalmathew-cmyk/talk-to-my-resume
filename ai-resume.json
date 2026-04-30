@@ -2,17 +2,6 @@
   "@context": "https://schema.org",
   "@type": "Person",
   "name": "Mathew Kalarikkal",
-  "jobTitle": "Business Operations, Strategy, and Monetization Leader",
-  "knowsAbout": [
-    "Business Operations",
-    "Marketplace Strategy",
-    "Monetization",
-    "Financial Modeling",
-    "Data Analysis",
-    "Stakeholder Management",
-    "SQL",
-    "VBA"
-  ],
   "sameAs": [
     "https://www.linkedin.com/in/matt-kalarikkal/",
     "https://github.com/kalarikkalmathew-cmyk",
@@ -25,24 +14,24 @@
     "chatEndpoint": "/.netlify/functions/groqHandler",
     "highlights": [
       {
-        "title": "improved zonal contribution margin",
-        "metric": "35-40% lift",
-        "timeframe": "2025-2026"
+        "title": "the work",
+        "metric": "Zomato · 4 years, 15 cities",
+        "question": "tell me about Mathew's professional background — what he did at Zomato, what he built, and what makes his ops experience unusual"
       },
       {
-        "title": "lifted ads monetization efficiency",
-        "metric": "ARPO +40% in 5 months",
-        "timeframe": "2025-2026"
+        "title": "who I am",
+        "metric": "bikes, books, better questions",
+        "question": "who is Mathew as a person? tell me about his life outside work — the rides, what he's reading, what drives him"
       },
       {
-        "title": "modeled warranty revenue impact",
-        "metric": "$50M projected over 5 years",
-        "timeframe": "2024-2025"
+        "title": "what I build",
+        "metric": "Io · ai-resume · obsidian",
+        "question": "tell me about the things Mathew has built from scratch — especially Io, the AI bookkeeping product for India's micro-SMBs"
       },
       {
-        "title": "built inside-sales engine",
-        "metric": "$70K early deals closed",
-        "timeframe": "2024-2025"
+        "title": "start anywhere",
+        "metric": "seriously, anything",
+        "question": "what's something non-obvious or surprising about Mathew that wouldn't show up on a standard resume?"
       },
       {
         "title": "ran zonal ops portfolio",

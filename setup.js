@@ -77,8 +77,9 @@ function generateWelcomeCardsHtml(welcomeHighlights) {
     .map((h) => {
       const title = escapeHtml(h.title || "");
       const metric = escapeHtml(h.metric || "");
-      const label = `Career highlight: ${h.title || ""}${h.metric ? ", " + h.metric : ""}`;
-      return `      <button type="button" class="card" role="article" aria-label="${escapeHtml(label)}" data-title="${title}">
+      const question = escapeHtml(h.question || h.title || "");
+      const label = h.metric ? `${h.title} — ${h.metric}` : (h.title || "");
+      return `      <button type="button" class="card" role="article" aria-label="${escapeHtml(label)}" data-title="${title}" data-question="${question}">
         <span class="card-label">${title}</span>
         <span class="card-metric">${metric}</span>
       </button>`;
@@ -87,41 +88,18 @@ function generateWelcomeCardsHtml(welcomeHighlights) {
 }
 
 function generateProfilePanelHtml(config) {
-  const skills = Array.isArray(config.resume?.skills) ? config.resume.skills : [];
-  const aspirations = Array.isArray(config.aspirations) ? config.aspirations : [];
+  const chips = Array.isArray(config.job_fit_chips) ? config.job_fit_chips : [];
+  if (!chips.length) return "";
 
   const questionButton = (label, question) =>
     `<button type="button" class="suggestion-chip profile-chip" data-question="${escapeHtml(question)}">${escapeHtml(label)}</button>`;
 
-  const skillsHtml = skills.length
-    ? `      <div class="profile-block">
-        <span class="profile-label">Skills</span>
+  return `    <section class="profile-panel" aria-label="Conversation starters">
+      <div class="profile-block">
         <div class="profile-pills">
-${skills.map((skill) => questionButton(skill, `how does Mathew show strength in ${skill}?`)).join("\n")}
+${chips.map((c) => questionButton(c.label, c.question)).join("\n")}
         </div>
-      </div>`
-    : "";
-
-  const aspirationsHtml = aspirations.length
-    ? `      <div class="profile-block">
-        <span class="profile-label">Aspirations</span>
-        <div class="profile-pills">
-${aspirations.map((aspiration) => questionButton(aspiration, `what roles fit Mathew best for ${aspiration}?`)).join("\n")}
-        </div>
-      </div>`
-    : "";
-
-  const fitHtml = `      <div class="profile-block">
-        <span class="profile-label">Job fit</span>
-        <div class="profile-pills">
-          ${questionButton("paste a JD", "is Mathew a good fit for this role?")}
-          ${questionButton("fit check", "is Mathew a good fit for this role?")}
-          ${questionButton("what more can he bring?", "what more can Mathew bring to the table for this role?")}
-        </div>
-      </div>`;
-
-  return `    <section class="profile-panel" aria-label="Skills and fit helpers">
-${skillsHtml ? skillsHtml + "\n" : ""}${aspirationsHtml ? aspirationsHtml + "\n" : ""}${fitHtml}
+      </div>
     </section>`;
 }
 
