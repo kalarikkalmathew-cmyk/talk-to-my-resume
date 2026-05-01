@@ -213,8 +213,8 @@ Do everything for me:
 1. Create a new GitHub repo from that template (gh repo create --template agamarora/ai-resume --public <repo-name> --clone). Pick a sensible name from my GitHub username or ask me one question if you need to.
 2. Scaffold it locally.
 3. Read the repo's CLAUDE.md — it's the setup wizard. Follow it start to finish.
-4. Walk me through it conversationally: resume (draft → critique → refine, push hard for metrics), Groq API key, highlights with numbers, config. Run setup.js, then the eval-in-a-loop until all 12 tests pass on both cascade models or 3 no-improvement rounds.
-5. Deploy to Netlify. Set GROQ_API_KEY in Netlify env vars too.
+4. Walk me through it conversationally: resume (draft → critique → refine, push hard for metrics), Anthropic API key, highlights with numbers, config. Run setup.js, then the eval-in-a-loop until all 12 tests pass or 3 no-improvement rounds.
+5. Deploy to Netlify. Set ANTHROPIC_API_KEY in Netlify env vars too.
 6. Give me the live URL.
 
 I'll answer your questions. Ask before anything destructive. I'm on a laptop with Node 18+, gh CLI, and git installed.`;
@@ -744,7 +744,7 @@ try {
   console.log(`   ${promptUpdated ? "✓" : "·"} system-prompt.md (${promptUpdated ? `${fhCount} full highlights refreshed between markers` : "untouched — add <!-- BEGIN/END:FULL_HIGHLIGHTS --> markers to enable sync"})`);
   console.log(`   ✓ ai-resume.json (/.well-known/ endpoint)`);
   console.log(`   ✓ manifest.json (PWA)`);
-  console.log(`\nNext: add GROQ_API_KEY to .env, then 'netlify dev' to test.`);
+  console.log(`\nNext: add ANTHROPIC_API_KEY to .env, then 'netlify dev' to test.`);
 } catch (err) {
   console.error(`❌ Setup failed: ${err.message}`);
   if (err.stack) console.error(err.stack);

@@ -30,12 +30,12 @@ if (netlifyInstalled) {
 
 if (existsSync(".env")) {
   const env = readFileSync(".env", "utf8");
-  const key = (env.match(/GROQ_API_KEY=(.+)/)?.[1]?.trim() || "").replace(/^["']|["']$/g, "");
-  if (!key) row(".env GROQ_API_KEY", "FAIL", "line missing or empty");
-  else if (!/^gsk_[A-Za-z0-9]+$/.test(key)) row(".env GROQ_API_KEY", "FAIL", "must start with gsk_ and contain no quotes/spaces");
-  else row(".env GROQ_API_KEY", "OK", `${key.slice(0, 6)}…${key.slice(-4)}`);
+  const key = (env.match(/ANTHROPIC_API_KEY=(.+)/)?.[1]?.trim() || "").replace(/^["']|["']$/g, "");
+  if (!key) row(".env ANTHROPIC_API_KEY", "FAIL", "line missing or empty");
+  else if (!/^sk-ant-[A-Za-z0-9\-_]+$/.test(key)) row(".env ANTHROPIC_API_KEY", "FAIL", "must start with sk-ant- and contain no quotes/spaces");
+  else row(".env ANTHROPIC_API_KEY", "OK", `${key.slice(0, 10)}…${key.slice(-4)}`);
 } else {
-  row(".env", "FAIL", "missing — create it with GROQ_API_KEY=gsk_...");
+  row(".env", "FAIL", "missing — create it with ANTHROPIC_API_KEY=sk-ant-...");
 }
 
 if (existsSync("setup-config.json")) {

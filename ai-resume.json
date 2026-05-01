@@ -35,34 +35,44 @@
         "question": "what's something non-obvious or surprising about Mathew that wouldn't show up on a standard resume?"
       },
       {
-        "title": "ran zonal ops portfolio",
-        "metric": "500 brands, 20 key accounts, 8 cities",
+        "title": "managed 450 Kochi restaurant partners",
+        "metric": "full-zone partner growth + same-store demand",
         "tag": "ops"
       },
       {
-        "title": "improved key-brand ad performance",
-        "metric": "ads ROI +25%",
+        "title": "built SQL dashboard library",
+        "metric": "Metabase/Trino, zero analysts, OV/NOV/ARPO/CRPO/VDO from scratch",
+        "tag": "data"
+      },
+      {
+        "title": "built Ramadan 2026 PnL",
+        "metric": "Google Sheets demand + supply planning with weekly actuals",
+        "tag": "finance"
+      },
+      {
+        "title": "improved contribution margin",
+        "metric": "zonal CM +35–40%",
+        "tag": "unit economics"
+      },
+      {
+        "title": "improved ads ROI + ARPO",
+        "metric": "key-brand ROI +25%, ARPO +40% in 5 months",
         "tag": "monetization"
       },
       {
         "title": "improved menu conversion",
-        "metric": "order-through rate +35%",
+        "metric": "order-through rate +35%, menu opens +50%",
         "tag": "growth"
       },
       {
         "title": "cut platform burn",
-        "metric": "Zomato burn -34%",
+        "metric": "Zomato burn -34% via voucher-led shift",
         "tag": "unit economics"
       },
       {
-        "title": "drove festive campaign performance",
-        "metric": "app opens and menu opens +30%",
+        "title": "drove festive campaigns",
+        "metric": "app opens + menu opens +30%, festive ads product +15% monetization",
         "tag": "marketing"
-      },
-      {
-        "title": "launched festive ads product",
-        "metric": "ads monetization +15%",
-        "tag": "product"
       },
       {
         "title": "expanded ads penetration",
@@ -70,13 +80,8 @@
         "tag": "merchant growth"
       },
       {
-        "title": "reduced merchant escalations",
-        "metric": "50% drop",
-        "tag": "ops"
-      },
-      {
         "title": "grew order value",
-        "metric": "+30% order value, +22% net order value",
+        "metric": "+30% OV, +22% NOV",
         "tag": "growth"
       },
       {
@@ -98,11 +103,6 @@
         "title": "structured enterprise bids",
         "metric": "$15M+ RFPs",
         "tag": "pricing"
-      },
-      {
-        "title": "built growth models",
-        "metric": "$5M projected incremental revenue",
-        "tag": "strategy"
       },
       {
         "title": "closed early sales",

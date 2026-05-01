@@ -6,11 +6,10 @@
 // Usage:
 //   node tests/seed-prompt-eval/run.mjs                      # all variants, all models
 //   node tests/seed-prompt-eval/run.mjs --variant v1-sharpened
-//   node tests/seed-prompt-eval/run.mjs --model llama-3.1-8b-instant
+//   node tests/seed-prompt-eval/run.mjs --model claude-haiku-4-5-20251001
 //
-// Requires GROQ_API_KEY in .env.
+// Requires ANTHROPIC_API_KEY in .env.
 
-import Groq from "groq-sdk";
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -29,27 +28,18 @@ try {
   }
 } catch {}
 
-if (!process.env.GROQ_API_KEY) {
-  console.error("Missing GROQ_API_KEY in .env");
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error("Missing ANTHROPIC_API_KEY in .env");
   process.exit(1);
 }
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
-// Agent models under test — proxies for the spectrum of coding agents a user
-// might have. Llama 8B = dumb-model floor (worst case agent). Llama 70B =
-// competent mid-tier. Matches our production cascade; no reason to test against
-// models we don't ship.
 const AGENT_MODELS = [
-  { id: "llama-3.1-8b-instant", tier: "dumb" },
-  { id: "llama-3.3-70b-versatile", tier: "smart" },
+  { id: "claude-haiku-4-5-20251001", tier: "haiku" },
 ];
 
-// Judge model — Llama 8B. It's our floor model, so using it as judge has a
-// nice property: if the paste prompt is so weak that even the 8B judge can't
-// detect missing rubric items, the prompt is definitely not resilient. Also
-// gets us off the 70B TPM bucket.
-const JUDGE_MODEL = "llama-3.1-8b-instant";
+const JUDGE_MODEL = "claude-haiku-4-5-20251001";
 
 const args = process.argv.slice(2);
 const variantFilter = args.includes("--variant") ? args[args.indexOf("--variant") + 1] : null;
@@ -90,13 +80,13 @@ const RUBRIC = [
   { id: "R3", weight: 2, name: "runs_preflight_doctor",
     criterion: "Plan includes `npm install` AND `npm run doctor` (or equivalent preflight check) BEFORE starting the wizard's resume/config steps." },
   { id: "R4", weight: 2, name: "asks_for_api_key_early",
-    criterion: "Plan asks user for the Groq API key EARLY (before running any eval), validates the gsk_ prefix, and writes it to .env." },
+    criterion: "Plan asks user for the Anthropic API key EARLY (before running any eval), validates the sk-ant- prefix, and writes it to .env." },
   { id: "R5", weight: 2, name: "plans_resume_coaching_loop",
     criterion: "Plan describes a draft→critique→refine loop for the resume (not a one-shot write). Mentions critiquing for metrics / vague verbs / specificity." },
   { id: "R6", weight: 2, name: "plans_eval_loop_with_stop_conditions",
     criterion: "Plan runs `npm run eval` in a loop, makes targeted edits to system-prompt.md on failure, keeps a best-so-far snapshot, stops when tests pass OR no-improvement ceiling hit (NOT infinitely)." },
   { id: "R7", weight: 2, name: "sets_groq_key_in_both_places",
-    criterion: "Plan sets GROQ_API_KEY in BOTH .env (local) AND Netlify env vars (production). Missing either place is a common bug." },
+    criterion: "Plan sets ANTHROPIC_API_KEY in BOTH .env (local) AND Netlify env vars (production). Missing either place is a common bug." },
   { id: "R8", weight: 1, name: "handles_edge_cases",
     criterion: "Plan acknowledges at least one edge case: site-name collision on `netlify sites:create`, or re-running setup.js after domain changes, or what to do if doctor flags real problems." },
   { id: "R9", weight: 2, name: "avoids_fork_clone_language",
@@ -108,15 +98,43 @@ const RUBRIC = [
 const MAX_POINTS = RUBRIC.reduce((s, r) => s + r.weight * 2, 0); // each item 0/1/2
 
 async function callWithBackoff(params, maxRetries = 5) {
+  // Anthropic takes system as top-level, not a message role
+  const systemMsg = (params.messages || []).find((m) => m.role === "system");
+  const system = systemMsg?.content;
+  const messages = (params.messages || []).filter((m) => m.role !== "system");
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await groq.chat.completions.create(params);
+      const body = { model: params.model, messages, max_tokens: params.max_tokens || 2500 };
+      if (system) body.system = system;
+      if (params.temperature !== undefined) body.temperature = params.temperature;
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const status = res.status;
+        if ((status === 429 || status === 529) && attempt < maxRetries) {
+          const wait = Math.min(60000, 2000 * 2 ** attempt);
+          process.stdout.write(` [${status}, waiting ${Math.round(wait/1000)}s]`);
+          await new Promise(r => setTimeout(r, wait));
+          continue;
+        }
+        throw new Error(err?.error?.message || `HTTP ${status}`);
+      }
+      const data = await res.json();
+      // Return a Groq-compatible shape so callers work unchanged
+      return { choices: [{ message: { content: data.content?.[0]?.text || "" } }] };
     } catch (e) {
-      const is429 = e.status === 429 || /429|rate limit/i.test(e.message || "");
-      if (!is429 || attempt === maxRetries) throw e;
-      const retryAfter = Number(e.headers?.["retry-after"]) || 0;
-      const wait = retryAfter > 0 ? retryAfter * 1000 : Math.min(60000, 2000 * 2 ** attempt);
-      process.stdout.write(` [429, waiting ${Math.round(wait/1000)}s]`);
+      if (attempt === maxRetries) throw e;
+      const wait = Math.min(60000, 2000 * 2 ** attempt);
+      process.stdout.write(` [err, waiting ${Math.round(wait/1000)}s]`);
       await new Promise(r => setTimeout(r, wait));
     }
   }
@@ -163,7 +181,6 @@ Output ONLY valid JSON, no prose, no code fences, in this exact schema:
     ],
     temperature: 0,
     max_tokens: 2000,
-    response_format: { type: "json_object" },
   });
   return JSON.parse(res.choices[0].message.content);
 }

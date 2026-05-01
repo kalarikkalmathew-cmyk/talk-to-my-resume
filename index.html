@@ -16,7 +16,7 @@
   <link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Inter:wght@400;500;600&family=Patrick+Hand&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600&family=Patrick+Hand&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #0F0E0C;
@@ -25,6 +25,7 @@
       --text-dim: #8C8C8C;
       --accent: #B38B4D;
       --surface: #161513;
+      --font: 'Lexend', system-ui, sans-serif;
       --accent-fg: #000000;
       --accent-04: rgba(179,139,77,0.04);
       --accent-06: rgba(179,139,77,0.06);
@@ -49,11 +50,9 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: "Inter", system-ui, -apple-system, sans-serif;
-      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      font-family: var(--font);
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      letter-spacing: -0.01em;
       font-size: 15px;
       line-height: 1.5;
       height: var(--vh, 100svh);
@@ -98,10 +97,10 @@
       gap: 10px;
     }
     .chat-header .mark-small {
-      font-family: 'Playfair Display', Georgia, serif;
+      font-family: var(--font);
       font-size: 24px;
       color: var(--text);
-      font-weight: 400;
+      font-weight: 500;
       line-height: 1;
       flex: 1;
       min-width: 0;
@@ -121,13 +120,15 @@
       to { opacity: 1; transform: translateY(0); }
     }
     .welcome-content {
+      min-height: calc(100dvh - 60px);
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       text-align: center;
       width: 100%;
       max-width: 520px;
-      margin: auto;
+      margin: 0 auto;
     }
     .welcome-hero {
       text-align: center;
@@ -136,21 +137,19 @@
       align-items: center;
     }
     .welcome-hero .hero-name {
-      font-family: 'Playfair Display', Georgia, serif;
+      font-family: var(--font);
       font-size: 30px;
       font-weight: 500;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.01em;
       color: var(--text);
       margin: 0;
       line-height: 1.1;
-      animation: fadeUp 500ms ease-out 300ms backwards;
     }
     .welcome-hero .hero-role {
       font-size: 14px;
       color: var(--text-dim);
       letter-spacing: -0.01em;
       margin: 2px 0 0;
-      animation: fadeUp 500ms ease-out 450ms backwards;
     }
     .welcome-hero .hero-role:empty { display: none; }
     .welcome-hero .hero-tagline {
@@ -162,8 +161,19 @@
       max-width: 32ch;
       margin: 0;
       opacity: 0.85;
-      animation: fadeUp 500ms ease-out 600ms backwards;
     }
+    .welcome-hero .hero-bio {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--text-dim);
+      margin-top: 10px;
+      letter-spacing: 0;
+      line-height: 1.5;
+    }
+    body.welcome-visible .welcome-hero .hero-name   { animation: fadeUp 500ms ease-out 300ms backwards; }
+    body.welcome-visible .welcome-hero .hero-role    { animation: fadeUp 500ms ease-out 450ms backwards; }
+    body.welcome-visible .welcome-hero .hero-tagline { animation: fadeUp 500ms ease-out 600ms backwards; }
+    body.welcome-visible .welcome-hero .hero-bio     { animation: fadeUp 500ms ease-out 700ms backwards; }
     @media (max-width: 640px) {
       .welcome-hero .hero-name { font-size: 24px; }
       .welcome-hero .hero-tagline { font-size: 17px; max-width: 28ch; }
@@ -210,12 +220,10 @@
       flex-direction: column;
       gap: 12px;
     }
-    /* Empty-state vertical centering: when no messages have been sent yet,
-       center the welcome block in the available space instead of letting it
-       cling to the top with a huge dead zone below. Once a .msg exists, the
-       rule drops and messages flow top-down normally. */
+    /* Empty-state: strip padding so welcome-content (flex:1) fills and centers. */
     .messages:not(:has(.msg)) {
-      justify-content: center;
+      padding-top: 0;
+      padding-bottom: 0;
     }
 
     /* Cards grid (inline AI responses only) */
@@ -329,10 +337,11 @@
       width: 100%;
       margin-top: 32px;
     }
-    .cat-row { display: flex; flex-direction: column; gap: 8px; animation: fadeUp 500ms ease-out backwards; }
-    .cat-row:nth-child(1) { animation-delay: 750ms; }
-    .cat-row:nth-child(2) { animation-delay: 850ms; }
-    .cat-row:nth-child(3) { animation-delay: 950ms; }
+    .cat-row { display: flex; flex-direction: column; gap: 8px; }
+    body.welcome-visible .cat-row { animation: fadeUp 500ms ease-out backwards; }
+    body.welcome-visible .cat-row:nth-child(1) { animation-delay: 750ms; }
+    body.welcome-visible .cat-row:nth-child(2) { animation-delay: 850ms; }
+    body.welcome-visible .cat-row:nth-child(3) { animation-delay: 950ms; }
     .cat-btn {
       appearance: none;
       font: inherit;
@@ -432,7 +441,9 @@
       border: 1px solid var(--accent-25);
     }
     .msg.thinking-state { color: var(--text-dim); font-style: italic; }
-    .msg-text { display: inline; white-space: pre-wrap; }
+    .msg-text { display: block; white-space: pre-wrap; }
+    .msg-text ul { padding-left: 18px; margin: 4px 0; }
+    .msg-text li { margin: 2px 0; line-height: 1.5; }
 
     .cursor {
       display: inline-block;
@@ -508,8 +519,8 @@
       display: flex;
       align-items: flex-end;
       gap: 8px;
-      animation: fadeUp 500ms ease-out 1000ms backwards;
     }
+    body.welcome-visible .input-area { animation: fadeUp 500ms ease-out 1000ms backwards; }
     .input-area textarea {
       flex: 1;
       resize: none;
@@ -693,7 +704,8 @@
       <section class="welcome-hero" id="welcome-hero" aria-label="About Mathew Kalarikkal">
         <h1 class="hero-name">Mathew Kalarikkal</h1>
         <p class="hero-role">Ops · Strategy · Monetization</p>
-        <p class="hero-tagline">engine oil to whatever car you&#39;re driving.</p>
+        <p class="hero-tagline">I find the inefficiency. I fix it. I make it scale.</p>
+        <p class="hero-bio">Deloitte → AIonOS → Zomato → Rapido. No MBA. Just the work.</p>
       </section>
       <div class="cat-nav" id="cat-nav" aria-label="Explore topics"></div>
     </div>
@@ -733,6 +745,7 @@
 
       if (reduceMotion || alreadySeen || !stage || !svg || !headerMark) {
         document.body.classList.remove("intro-active");
+        document.body.classList.add("welcome-visible");
         stage?.remove();
         return;
       }
@@ -840,6 +853,7 @@
 
               setTimeout(() => {
                 document.body.classList.remove("intro-active");
+                document.body.classList.add("welcome-visible");
               }, MOVE_DURATION - 150);
 
               setTimeout(() => {
@@ -1066,6 +1080,26 @@
     }
     wireQuestionHandlers(document);
 
+    // === MARKDOWN PARSER (assistant replies only) ===
+    function parseMarkdown(text) {
+      function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+      function bold(s) { return s.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>'); }
+      const lines = text.split('\n');
+      let html = '', inList = false;
+      for (const raw of lines) {
+        const li = raw.match(/^[-*] (.+)/);
+        if (li) {
+          if (!inList) { html += '<ul>'; inList = true; }
+          html += '<li>' + bold(esc(li[1])) + '</li>';
+        } else {
+          if (inList) { html += '</ul>'; inList = false; }
+          html += raw.trim() === '' ? '<br>' : bold(esc(raw)) + '<br>';
+        }
+      }
+      if (inList) html += '</ul>';
+      return html.replace(/(<br>\s*)+$/, '');
+    }
+
     // === MESSAGE RENDERING ===
     function addMessageBubble(role, text) {
       const div = document.createElement("div");
@@ -1179,7 +1213,8 @@
           div.className = "msg assistant";
           const span = document.createElement("span");
           span.className = "msg-text";
-          span.textContent = p.content;
+          span.style.whiteSpace = 'normal';
+          span.innerHTML = parseMarkdown(p.content);
           div.appendChild(span);
           addAssistantActions(div, () => finalText);
           frag.appendChild(div);
@@ -1436,7 +1471,8 @@
         streaming.el.replaceWith(frag);
       } else {
         // Text-only: keep the streaming bubble, finalize text, add actions
-        streaming.textSpan.textContent = cleanText;
+        streaming.textSpan.style.whiteSpace = 'normal';
+        streaming.textSpan.innerHTML = parseMarkdown(cleanText);
         addAssistantActions(streaming.el, () => cleanText);
       }
 

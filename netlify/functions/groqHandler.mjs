@@ -1,21 +1,11 @@
-import Groq from "groq-sdk";
 import { readFileSync } from "fs";
 import { join } from "path";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-  maxRetries: 0,
-  timeout: 3140,
-});
-
-// Read system prompt from bundled file (included via netlify.toml included_files)
 let SYSTEM_PROMPT, SYSTEM_REMINDER;
 try {
   const raw = readFileSync(join(process.cwd(), "system-prompt.md"), "utf8");
-  // Extract content between # System Prompt and ## Reminder
   const mainMatch = raw.match(/# System Prompt\n([\s\S]*?)## Reminder/);
   SYSTEM_PROMPT = mainMatch ? mainMatch[1].trim() : raw;
-  // Extract reminder section
   const reminderMatch = raw.match(/## Reminder\n([\s\S]*?)$/);
   SYSTEM_REMINDER = reminderMatch ? reminderMatch[1].trim() : "";
 } catch (err) {
@@ -26,12 +16,7 @@ try {
 
 const MAX_INPUT_LENGTH = 6000;
 const MAX_HISTORY_MSG_LENGTH = 1200;
-const MAX_COMPLETION_TOKENS = 300;
-
-const MODELS = [
-  "llama-3.3-70b-versatile",
-  "llama-3.1-8b-instant",
-];
+const MAX_TOKENS = 1024;
 
 // https://kalarikkalmathew-cmyk-ai-resume.netlify.app — replaced by setup.js
 const ALLOWED_ORIGINS = new Set([
@@ -132,21 +117,24 @@ export default async function handler(req) {
       });
     }
 
-    const messages = [{ role: "system", content: SYSTEM_PROMPT }];
+    // Build system string (Anthropic takes system as a top-level field, not a message)
+    const systemParts = [SYSTEM_PROMPT];
     if (looksLikeJobFitAnalysis(input)) {
-      messages.push({
-        role: "system",
-        content: [
+      systemParts.push(
+        [
           "This is a recruiter fit-analysis request.",
           "Break the answer into: role summary, Mathew profile, overlap/synergies, gaps or risks, verdict, and what more Mathew can bring to the table.",
           "Be optimistic first, then honest. If fit is weak, suggest adjacent roles in the same company where Mathew is a stronger match.",
           "Use bullets when helpful and keep the answer structured.",
-        ].join(" "),
-      });
+        ].join(" ")
+      );
     }
+    if (SYSTEM_REMINDER) systemParts.push(SYSTEM_REMINDER);
+    const system = systemParts.join("\n\n");
 
-    // Conversation history (last 6 messages)
+    // Build messages array — Anthropic only allows user/assistant roles
     const history = Array.isArray(body.history) ? body.history.slice(-6) : [];
+    const messages = [];
     for (const msg of history) {
       if (msg.role === "user" || msg.role === "assistant") {
         const limit = msg.role === "assistant" ? MAX_HISTORY_MSG_LENGTH : MAX_INPUT_LENGTH;
@@ -156,57 +144,62 @@ export default async function handler(req) {
         }
       }
     }
-
-    if (SYSTEM_REMINDER) {
-      messages.push({ role: "system", content: SYSTEM_REMINDER });
-    }
     messages.push({ role: "user", content: input });
 
-    let stream;
-    let usedModel;
-    for (const model of MODELS) {
-      try {
-        stream = await groq.chat.completions.create({
-          model,
-          messages,
-          max_completion_tokens: MAX_COMPLETION_TOKENS,
-          temperature: 0.7,
-          stream: true,
-        });
-        usedModel = model;
-        break;
-      } catch (err) {
-        console.error(`${model}: ${err.constructor.name} — ${err.message}`);
-        // Cascade only on rate limits, timeouts, and server errors — not 4xx client errors
-        if (
-          err.constructor.name === "RateLimitError" ||
-          err.constructor.name === "APIConnectionTimeoutError" ||
-          err.status === 429 ||
-          (err.status >= 500 && err.status < 600)
-        ) {
-          continue;
-        }
-        // Auth errors or unknown errors — stop trying
-        break;
-      }
-    }
+    const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        system,
+        messages,
+        max_tokens: MAX_TOKENS,
+        stream: true,
+      }),
+    });
 
-    if (!stream) {
+    if (!apiRes.ok) {
+      const err = await apiRes.json().catch(() => ({}));
+      console.error("Anthropic API error:", apiRes.status, err);
       return new Response(
-        JSON.stringify({ error: "All models unavailable. Check your GROQ_API_KEY." }),
+        JSON.stringify({ error: "API unavailable. Check your ANTHROPIC_API_KEY." }),
         { status: 503, headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
 
+    // Pipe Anthropic SSE → our SSE format (frontend stays unchanged)
     const readable = new ReadableStream({
       async start(controller) {
+        const reader = apiRes.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
         try {
-          for await (const chunk of stream) {
-            const content = chunk.choices[0]?.delta?.content || "";
-            if (content) {
-              controller.enqueue(
-                new TextEncoder().encode(`data: ${JSON.stringify({ text: content })}\n\n`)
-              );
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split("\n");
+            buf = lines.pop();
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue;
+              const data = line.slice(6).trim();
+              if (data === "[DONE]") continue;
+              try {
+                const ev = JSON.parse(data);
+                if (
+                  ev.type === "content_block_delta" &&
+                  ev.delta?.type === "text_delta" &&
+                  ev.delta.text
+                ) {
+                  controller.enqueue(
+                    new TextEncoder().encode(`data: ${JSON.stringify({ text: ev.delta.text })}\n\n`)
+                  );
+                }
+              } catch { /* skip malformed lines */ }
             }
           }
           controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));

@@ -1,15 +1,12 @@
-import Groq from "groq-sdk";
 import { readFileSync, existsSync } from "fs";
 
 const dotenv = readFileSync(".env", "utf8");
-const rawKey = dotenv.match(/GROQ_API_KEY=(.+)/)?.[1]?.trim() ?? "";
+const rawKey = dotenv.match(/ANTHROPIC_API_KEY=(.+)/)?.[1]?.trim() ?? "";
 const apiKey = rawKey.replace(/^["']|["']$/g, "");
-if (!apiKey || !/^gsk_[A-Za-z0-9]+$/.test(apiKey)) {
-  console.error("GROQ_API_KEY in .env must start with gsk_ and contain no quotes/spaces.");
+if (!apiKey || !/^sk-ant-[A-Za-z0-9\-_]+$/.test(apiKey)) {
+  console.error("ANTHROPIC_API_KEY in .env must start with sk-ant- and contain no quotes/spaces.");
   process.exit(1);
 }
-
-const groq = new Groq({ apiKey, maxRetries: 0, timeout: 15000 });
 
 const systemPrompt = readFileSync("system-prompt.md", "utf8");
 
@@ -31,8 +28,7 @@ try {
 } catch { /* config not yet created */ }
 
 const PROD_MODELS = [
-  "llama-3.1-8b-instant",
-  "llama-3.3-70b-versatile",
+  "claude-haiku-4-5-20251001",
 ];
 
 const args = process.argv.slice(2);
@@ -172,23 +168,35 @@ function evaluate(text, testCase) {
 }
 
 async function callModel(model, messages) {
+  // Separate system message (Anthropic takes it top-level)
+  const systemMsg = messages.find((m) => m.role === "system");
+  const system = systemMsg?.content || systemPrompt;
+  const convoMessages = messages.filter((m) => m.role !== "system");
+
   const backoff = [0, 4000, 8000, 16000];
   for (let attempt = 0; attempt < backoff.length; attempt++) {
     if (backoff[attempt]) await new Promise((r) => setTimeout(r, backoff[attempt]));
     try {
-      const response = await groq.chat.completions.create({
-        model,
-        max_completion_tokens: 100,
-        temperature: 0.7,
-        messages,
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ model, system, messages: convoMessages, max_tokens: 100 }),
       });
-      const msg = response.choices[0]?.message || {};
-      const text = (msg.content && msg.content.trim()) || "";
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const status = res.status;
+        if (status === 429 && attempt < backoff.length - 1) continue;
+        return { ok: false, error: err?.error?.message || `HTTP ${status}`, infra: status === 429 || status === 529 };
+      }
+      const data = await res.json();
+      const text = data.content?.[0]?.text?.trim() || "";
       return { ok: true, text };
     } catch (err) {
-      const status = err?.status || err?.response?.status;
-      if (status === 429 && attempt < backoff.length - 1) continue;
-      return { ok: false, error: err.message || String(err), infra: status === 429 || status === 500 };
+      return { ok: false, error: err.message || String(err), infra: false };
     }
   }
   return { ok: false, error: "retries exhausted", infra: true };
@@ -270,7 +278,7 @@ if (suggestions.length > 0) {
       else if (issue.includes("FIRST PERSON")) console.log("  - Reinforce 'never say I' in system-prompt.md");
       else if (issue.includes("CORPORATE SLOP")) console.log("  - Add banned word to system-prompt.md voice section");
       else if (issue.includes("WEAK DEFLECTION")) console.log("  - Tighten the exact-reply deflection rules in system-prompt.md");
-      else if (issue.includes("INJECTION LEAK")) console.log("  - Strengthen injection filter in groqHandler.mjs + deflection in system-prompt.md");
+      else if (issue.includes("INJECTION LEAK")) console.log("  - Strengthen injection filter in netlify/functions/groqHandler.mjs + deflection in system-prompt.md");
       else if (issue.includes("NO CARDS")) console.log("  - Check setup-config.json has 4+ full_highlights with title + metric");
       else if (issue.includes("UNEXPECTED CARDS")) console.log("  - Tighten card rules in system-prompt.md — single-item asks must be prose");
       else if (issue.includes("GENERIC")) console.log("  - Add conversation examples to system-prompt.md");
