@@ -1444,10 +1444,25 @@
       return "something went wrong. try again?";
     }
 
-    // === FADE CATEGORY NAV ===
+    // === FADE WELCOME BLOCK ===
     function fadeWelcomeCards() {
       if (cardsFaded) return;
       cardsFaded = true;
+
+      const welcomeHero = document.querySelector(".welcome-hero");
+      if (welcomeHero) {
+        welcomeHero.style.transition = "opacity 300ms ease-out";
+        welcomeHero.style.opacity = "0";
+        setTimeout(() => {
+          welcomeHero.style.height = welcomeHero.offsetHeight + "px";
+          welcomeHero.offsetHeight;
+          welcomeHero.style.transition = "height 400ms ease-out, margin 400ms ease-out, padding 400ms ease-out";
+          welcomeHero.style.height = "0";
+          welcomeHero.style.overflow = "hidden";
+          welcomeHero.style.margin = "0";
+          welcomeHero.style.padding = "0";
+        }, 320);
+      }
 
       if (catNavEl) {
         catNavEl.style.transition = "opacity 250ms ease-out";
