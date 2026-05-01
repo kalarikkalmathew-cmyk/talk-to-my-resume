@@ -125,6 +125,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 20px;
       text-align: center;
       width: 100%;
       max-width: 520px;
@@ -690,6 +691,7 @@
 
     /* Scroll-reveal identity header */
     #scroll-header {
+      display: none;
       text-align: center;
       padding: 80px 24px 40px;
       opacity: 0;
@@ -697,7 +699,7 @@
       transition: opacity 400ms ease-out, transform 400ms ease-out;
       pointer-events: none;
     }
-    #scroll-header.visible { opacity: 1; transform: translateY(0); }
+    #scroll-header.visible { opacity: 1; transform: translateY(0); pointer-events: none; }
     .scroll-header-name {
       font-size: clamp(28px, 6vw, 48px);
       font-weight: 600;
@@ -1031,6 +1033,7 @@
 
     function maybeShowPdfNudge() {
       aiResponseCount++;
+      if (aiResponseCount === 1 && scrollHeader) scrollHeader.style.display = "block";
       if (aiResponseCount !== 3) return;
       if (sessionStorage.getItem(PDF_NUDGE_KEY)) return;
       sessionStorage.setItem(PDF_NUDGE_KEY, '1');
