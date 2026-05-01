@@ -197,6 +197,7 @@
     /* Messages list */
     .messages {
       position: relative;
+      z-index: 1;
       flex: 1;
       min-height: 0;
       overflow-y: auto;
@@ -658,6 +659,46 @@
       .messages     { padding-left: max(20px, calc(50% - 360px)); padding-right: max(20px, calc(50% - 360px)); }
       .input-area   { padding-left: max(12px, calc(50% - 360px)); padding-right: max(12px, calc(50% - 360px)); }
     }
+    /* Background watermark — shows through empty scroll space */
+    .chat-watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: var(--font);
+      font-size: clamp(80px, 20vw, 160px);
+      font-weight: 600;
+      color: rgba(179, 139, 77, 0.04);
+      letter-spacing: -0.04em;
+      pointer-events: none;
+      user-select: none;
+      z-index: 0;
+      white-space: nowrap;
+    }
+
+    /* Scroll-to-bottom button */
+    #scroll-to-bottom {
+      position: fixed;
+      bottom: 72px;
+      right: 24px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 200ms ease-out, transform 200ms ease-out;
+      z-index: 50;
+    }
+    #scroll-to-bottom.visible { opacity: 1; transform: translateY(0); }
+
     /* PDF nudge */
     #pdf-nudge {
       position: fixed;
@@ -698,6 +739,7 @@
   {{JSONLD_BLOCK}}
 </head>
 <body class="intro-active">
+  <div class="chat-watermark" aria-hidden="true">mk.</div>
   <a href="#input" class="skip-link">Skip to input</a>
   {{DEMO_BANNER_HTML}}
   <header class="chat-header">
@@ -731,6 +773,8 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <button id="scroll-to-bottom" aria-label="Scroll to latest message">&#x2193;</button>
 
   <div id="pdf-nudge" role="dialog" aria-label="Resume download prompt">
     <div class="nudge-text">
@@ -940,6 +984,7 @@
     const sendBtn = document.getElementById("send");
     const toastEl = document.getElementById("toast");
     const catNavEl = document.getElementById("cat-nav");
+    const scrollBtn = document.getElementById("scroll-to-bottom");
 
     // === Viewport height fix (iOS 26+ / svh/dvh fallback) ===
     function setVH() {
@@ -976,7 +1021,12 @@
       if (scrollTop < lastScrollTop) isUserScrolled = true;
       if (scrollHeight - scrollTop - clientHeight <= 50) isUserScrolled = false;
       lastScrollTop = scrollTop;
+      scrollBtn.classList.toggle("visible", scrollHeight - scrollTop - clientHeight > 200);
     }, { passive: true });
+
+    scrollBtn.addEventListener("click", () => {
+      messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: "smooth" });
+    });
 
     function scrollToBottom() {
       if (!isUserScrolled) {
