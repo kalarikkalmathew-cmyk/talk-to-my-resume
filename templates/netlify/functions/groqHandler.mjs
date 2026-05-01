@@ -14,9 +14,9 @@ try {
   SYSTEM_REMINDER = "";
 }
 
-const MAX_INPUT_LENGTH = 6000;
+const MAX_INPUT_LENGTH = 12000;
 const MAX_HISTORY_MSG_LENGTH = 1200;
-const MAX_TOKENS = 1024;
+const MAX_TOKENS = 2048;
 
 // {{ALLOWED_ORIGINS}} — replaced by setup.js
 const ALLOWED_ORIGINS = new Set([
