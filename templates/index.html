@@ -139,6 +139,13 @@
       display: none !important;
       min-height: 0 !important;
     }
+    .welcome-content.collapsed {
+      min-height: 0 !important;
+      height: 0 !important;
+      overflow: hidden !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
     .welcome-hero .hero-name {
       font-family: var(--font);
       font-size: 30px;
@@ -695,13 +702,20 @@
     #scroll-header {
       display: none;
       text-align: center;
-      padding: 80px 24px 40px;
+      padding: 0;
+      overflow: hidden;
       opacity: 0;
       transform: translateY(16px);
-      transition: opacity 400ms ease-out, transform 400ms ease-out;
+      transition: opacity 400ms ease-out, transform 400ms ease-out, padding 400ms ease-out;
       pointer-events: none;
     }
-    #scroll-header.visible { opacity: 1; transform: translateY(0); pointer-events: none; }
+    #scroll-header.visible {
+      opacity: 1;
+      transform: translateY(0);
+      padding: 80px 24px 40px;
+      overflow: visible;
+      pointer-events: none;
+    }
     .scroll-header-name {
       font-size: clamp(28px, 6vw, 48px);
       font-weight: 600;
@@ -1441,7 +1455,13 @@
       cardsFaded = true;
 
       const welcomeContent = document.querySelector(".welcome-content");
-      if (welcomeContent) welcomeContent.style.minHeight = "0";
+      if (welcomeContent) {
+        welcomeContent.style.minHeight = "0";
+        welcomeContent.style.height = "0";
+        welcomeContent.style.overflow = "hidden";
+        welcomeContent.style.padding = "0";
+        welcomeContent.classList.add("collapsed");
+      }
 
       const welcomeHero = document.querySelector(".welcome-hero");
       if (welcomeHero) {
