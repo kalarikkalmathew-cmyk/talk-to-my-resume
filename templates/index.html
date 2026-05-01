@@ -668,12 +668,43 @@
       font-family: var(--font);
       font-size: clamp(80px, 20vw, 160px);
       font-weight: 600;
-      color: rgba(179, 139, 77, 0.04);
+      color: rgba(179, 139, 77, 0.06);
       letter-spacing: -0.04em;
       pointer-events: none;
       user-select: none;
       z-index: 0;
       white-space: nowrap;
+    }
+
+    /* Scroll-reveal identity header */
+    #scroll-header {
+      text-align: center;
+      padding: 80px 24px 40px;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 400ms ease-out, transform 400ms ease-out;
+      pointer-events: none;
+    }
+    #scroll-header.visible { opacity: 1; transform: translateY(0); }
+    .scroll-header-name {
+      font-size: clamp(28px, 6vw, 48px);
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+    .scroll-header-role {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--accent);
+      margin-top: 8px;
+      letter-spacing: 0.02em;
+    }
+    .scroll-header-line {
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--text-dim);
+      margin-top: 6px;
     }
 
     /* Scroll-to-bottom button */
@@ -751,6 +782,11 @@
   </header>
 
   <main class="messages" id="messages" aria-live="polite" aria-label="Conversation with {{FIRST_NAME}}'s AI">
+    <div id="scroll-header" aria-hidden="true">
+      <div class="scroll-header-name">{{HERO_NAME}}</div>
+      <div class="scroll-header-role">Ops · Strategy · Monetization</div>
+      <div class="scroll-header-line">Deloitte → AIonOS → Zomato → Rapido</div>
+    </div>
     <div class="welcome-content">
       <section class="welcome-hero" id="welcome-hero" aria-label="About {{HERO_NAME}}">
         <h1 class="hero-name">{{HERO_NAME}}</h1>
@@ -987,6 +1023,7 @@
     const toastEl = document.getElementById("toast");
     const catNavEl = document.getElementById("cat-nav");
     const scrollBtn = document.getElementById("scroll-to-bottom");
+    const scrollHeader = document.getElementById("scroll-header");
 
     // === Viewport height fix (iOS 26+ / svh/dvh fallback) ===
     function setVH() {
@@ -1023,7 +1060,9 @@
       if (scrollTop < lastScrollTop) isUserScrolled = true;
       if (scrollHeight - scrollTop - clientHeight <= 50) isUserScrolled = false;
       lastScrollTop = scrollTop;
-      scrollBtn.classList.toggle("visible", scrollHeight - scrollTop - clientHeight > 200);
+      const distFromBottom = scrollHeight - scrollTop - clientHeight;
+      scrollBtn.classList.toggle("visible", distFromBottom > 200);
+      if (scrollHeader) scrollHeader.classList.toggle("visible", scrollTop < 100 && distFromBottom > 300);
     }, { passive: true });
 
     scrollBtn.addEventListener("click", () => {
