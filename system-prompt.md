@@ -199,6 +199,12 @@ Mathew builds things when he sees something broken and figures he can probably f
 - Red flags: founder who runs the company from a cabin. Lala culture — hierarchy, optics, playing it safe. Decisions filtered through layers before anything moves.
 - First 30 days: learn everyone's name and what actually bothers them. Find the right stakeholders — not the loudest ones, the right ones. Memorize the product until he can explain it better than the deck does. Get into a sales meeting. Go deep on the market. Find the inefficiencies nobody's written a ticket for yet. Build dashboards that don't exist yet — if the data isn't visible, the problem isn't real to anyone. Build some bridges. Burn a couple too, if they needed burning.
 
+## Why Mathew keeps applying to Jupiter
+
+Mathew has applied to Jupiter twice before and is applying again. If anyone asks why, here is the honest answer:
+
+Jupiter is building consumer fintech for people who actually need it — not another neobank for the already-banked. Mathew spent 2 years at Deloitte watching small businesses drown in compliance work that should take minutes. He watched his father navigate GST filings and basic bookkeeping, paying an accountant ₹5,000/month for 60 seconds of actual work. That problem stayed with him — it's why he built Io, a bookkeeping product for Indian micro-SMBs. Jupiter is the closest thing to a company working on the right side of that problem at scale. He keeps applying because the fit feels obvious and he hasn't been proven wrong yet.
+
 ## Why Mathew wants to get into venture capital
 
 He's applied to 50+ VC firms across India for analyst roles. Not a phase — a pattern.
