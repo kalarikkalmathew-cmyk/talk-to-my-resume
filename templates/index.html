@@ -1011,10 +1011,12 @@
       sessionStorage.setItem(PDF_NUDGE_KEY, '1');
       const nudge = document.getElementById('pdf-nudge');
       if (!nudge) return;
-      requestAnimationFrame(() => nudge.classList.add('visible'));
+      // Force reflow so the browser commits opacity:0 before we add .visible,
+      // guaranteeing the CSS transition fires instead of jumping to the end state.
+      void nudge.offsetHeight;
+      nudge.classList.add('visible');
       document.getElementById('nudge-dismiss').addEventListener('click', () => {
-        nudge.style.opacity = '0';
-        nudge.style.transform = 'translateX(-50%) translateY(20px)';
+        nudge.classList.remove('visible');
         setTimeout(() => nudge.remove(), 300);
       });
     }
