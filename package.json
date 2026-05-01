@@ -12,7 +12,12 @@
     "check-models": "node scripts/check-models.mjs",
     "doctor": "node scripts/doctor.mjs",
     "sync-readme": "node scripts/sync-readme-prompt.mjs",
-    "eval-seed-prompt": "node tests/seed-prompt-eval/run.mjs"
+    "eval-seed-prompt": "node tests/seed-prompt-eval/run.mjs",
+    "generate-pdf": "node scripts/generate-resume-pdf.mjs"
   },
-  "dependencies": {}
+  "devDependencies": {
+    "@fontsource/lexend": "^5.2.11",
+    "pdfmake": "^0.3.7",
+    "puppeteer": "^22.15.0"
+  }
 }

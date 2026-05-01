@@ -17,3 +17,8 @@
   from = "/.well-known/ai-resume.json"
   to = "/ai-resume.json"
   status = 200
+
+[[redirects]]
+  from = "/resume.pdf"
+  to = "/public/mathew-kalarikkal-resume.pdf"
+  status = 200

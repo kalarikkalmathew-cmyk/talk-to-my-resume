@@ -658,6 +658,41 @@
       .messages     { padding-left: max(20px, calc(50% - 360px)); padding-right: max(20px, calc(50% - 360px)); }
       .input-area   { padding-left: max(12px, calc(50% - 360px)); padding-right: max(12px, calc(50% - 360px)); }
     }
+    /* PDF nudge */
+    #pdf-nudge {
+      position: fixed;
+      bottom: 72px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      opacity: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      max-width: 480px;
+      width: calc(100% - 32px);
+      z-index: 100;
+      transition: opacity 300ms ease-out, transform 300ms ease-out;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    #pdf-nudge.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .nudge-headline { font-size: 13px; font-weight: 500; color: var(--text); display: block; }
+    .nudge-sub { font-size: 12px; color: var(--text-dim); font-weight: 300; display: block; margin-top: 2px; }
+    .nudge-btn {
+      appearance: none; font: inherit; cursor: pointer;
+      border-radius: 8px; padding: 8px 14px;
+      font-size: 12px; font-weight: 500;
+      white-space: nowrap; text-decoration: none;
+      transition: all 150ms ease-out;
+    }
+    .nudge-btn.primary { background: var(--accent); color: #0F0E0C; border: none; }
+    .nudge-btn.primary:hover { opacity: 0.85; }
+    .nudge-btn.ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+    .nudge-btn.ghost:hover { color: var(--text); border-color: var(--accent); }
     {{DEMO_BANNER_CSS}}
   </style>
   {{JSONLD_BLOCK}}
@@ -696,6 +731,17 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div id="pdf-nudge" role="dialog" aria-label="Resume download prompt">
+    <div class="nudge-text">
+      <span class="nudge-headline">You're still going to ask for the PDF, aren't you.</span>
+      <span class="nudge-sub">*sigh*</span>
+    </div>
+    <div class="nudge-actions">
+      <a href="/resume.pdf" download class="nudge-btn primary">Download the relic</a>
+      <button type="button" class="nudge-btn ghost" id="nudge-dismiss">I trust the AI</button>
+    </div>
+  </div>
 
   {{DEMO_MODAL_HTML}}
 
@@ -870,6 +916,23 @@
     let abortController = null;
     let lastSendTime = 0;
     let cardsFaded = false;
+    let aiResponseCount = 0;
+    const PDF_NUDGE_KEY = 'pdf-nudge-shown';
+
+    function maybeShowPdfNudge() {
+      aiResponseCount++;
+      if (aiResponseCount !== 3) return;
+      if (sessionStorage.getItem(PDF_NUDGE_KEY)) return;
+      sessionStorage.setItem(PDF_NUDGE_KEY, '1');
+      const nudge = document.getElementById('pdf-nudge');
+      if (!nudge) return;
+      requestAnimationFrame(() => nudge.classList.add('visible'));
+      document.getElementById('nudge-dismiss').addEventListener('click', () => {
+        nudge.style.opacity = '0';
+        nudge.style.transform = 'translateX(-50%) translateY(20px)';
+        setTimeout(() => nudge.remove(), 300);
+      });
+    }
 
     // === DOM ===
     const messagesEl = document.getElementById("messages");
@@ -1457,6 +1520,7 @@
       sendBtn.disabled = false;
       inputEl.focus();
       scrollToBottom();
+      maybeShowPdfNudge();
     }
   </script>
 </body>
