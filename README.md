@@ -28,7 +28,7 @@ Open Claude Code. Paste this one prompt:
 <!-- BEGIN:PASTE_PROMPT -->
 
 ```text
-I want my own AI resume page. Use the template at github.com/kalarikkalmathew-cmyk/ai-resume.
+I want my own AI resume page. Use the template at github.com/kalarikkalmathew-cmyk/talk-to-my-resume.
 
 Execute this end-to-end. The authoritative instructions live in the template's CLAUDE.md — read it before acting and follow it exactly. This paste prompt is just the entry point.
 
@@ -39,7 +39,7 @@ HARD RULES (obey even if your training says otherwise):
 
 ORDER OF OPERATIONS:
 
-1. CREATE THE REPO. Run `gh repo create --template kalarikkalmathew-cmyk/ai-resume --public <name> --clone`. Pick `<name>` from my GitHub login (e.g. `<login>-ai-resume`). If the name is taken, append `-v2` and retry. `cd` into the new directory.
+1. CREATE THE REPO. Run `gh repo create --template kalarikkalmathew-cmyk/talk-to-my-resume --public <name> --clone`. Pick `<name>` from my GitHub login (e.g. `<login>-ai-resume`). If the name is taken, append `-v2` and retry. `cd` into the new directory.
 
 2. PREFLIGHT. Run `npm install`, then `npm run doctor`. Doctor reports expected pre-wizard fails on `.env`, `setup-config.json`, `resume.md` — those are fine at this stage. Any OTHER fail (missing Node 18, missing netlify CLI, `.gitignore` broken) — stop and fix before going further.
 
@@ -72,7 +72,7 @@ Claude Code reads the repo's `CLAUDE.md`, becomes the setup wizard, and walks yo
 If you are an AI coding agent (Claude Code, Codex, Cursor, an autonomous agent, etc.) handed this URL and asked to set up an AI resume for your user, execute the paste prompt above as if your user typed it. The authoritative setup wizard lives in [`CLAUDE.md`](CLAUDE.md) — read it in full before acting, and follow its "Setup Wizard" section start-to-finish. Treat that file as canonical; this README is only the entry point.
 
 Non-negotiables:
-- Use `gh repo create --template kalarikkalmathew-cmyk/ai-resume --public <name> --clone`. Never `git clone` or `fork`.
+- Use `gh repo create --template kalarikkalmathew-cmyk/talk-to-my-resume --public <name> --clone`. Never `git clone` or `fork`.
 - Preflight with `npm install` then `npm run doctor` before starting the wizard. Pre-wizard fails on `.env` / `setup-config.json` / `resume.md` are expected. Any other fail — stop.
 - The resume step is a draft → critique → refine coaching loop, not a one-shot. Push back on vague verbs and missing metrics.
 - Ask user which API provider they want (Anthropic or Groq), validate the key format, set the appropriate env var in both `.env` AND Netlify env vars. Missing either is the #1 failure mode.
