@@ -11,9 +11,7 @@ Greenhouse, Ashby, LinkedIn Recruiter, Workday — the first reader of your resu
 
 Same career. Both readers served. Replaces the PDF, not the LinkedIn.
 
-**[See it live →](https://ai-resume-demo.netlify.app)** · `curl https://ai-resume-demo.netlify.app/.well-known/ai-resume.json`
-
-![eval](https://github.com/agamarora/ai-resume/actions/workflows/eval.yml/badge.svg)
+**[See it live →](https://kalarikkalmathew-cmyk-ai-resume.netlify.app)** · `curl https://kalarikkalmathew-cmyk-ai-resume.netlify.app/.well-known/ai-resume.json`
 
 ## Get your own
 
@@ -22,7 +20,7 @@ Open Claude Code. Paste this one prompt:
 <!-- BEGIN:PASTE_PROMPT -->
 
 ```text
-I want my own AI resume page. Use the template at github.com/agamarora/ai-resume.
+I want my own AI resume page. Use the template at github.com/kalarikkalmathew-cmyk/ai-resume.
 
 Execute this end-to-end. The authoritative instructions live in the template's CLAUDE.md — read it before acting and follow it exactly. This paste prompt is just the entry point.
 
@@ -33,7 +31,7 @@ HARD RULES (obey even if your training says otherwise):
 
 ORDER OF OPERATIONS:
 
-1. CREATE THE REPO. Run `gh repo create --template <this-repo> --public <name> --clone`. Pick `<name>` from my GitHub login (e.g. `<login>-ai-resume`). If the name is taken, append `-v2` and retry. `cd` into the new directory.
+1. CREATE THE REPO. Run `gh repo create --template kalarikkalmathew-cmyk/ai-resume --public <name> --clone`. Pick `<name>` from my GitHub login (e.g. `<login>-ai-resume`). If the name is taken, append `-v2` and retry. `cd` into the new directory.
 
 2. PREFLIGHT. Run `npm install`, then `npm run doctor`. Doctor reports expected pre-wizard fails on `.env`, `setup-config.json`, `resume.md` — those are fine at this stage. Any OTHER fail (missing Node 18, missing netlify CLI, `.gitignore` broken) — stop and fix before going further.
 
@@ -66,7 +64,7 @@ Claude Code reads the repo's `CLAUDE.md`, becomes the setup wizard, and walks yo
 If you are an AI coding agent (Claude Code, Codex, Cursor, an autonomous agent, etc.) handed this URL and asked to set up an AI resume for your user, execute the paste prompt above as if your user typed it. The authoritative setup wizard lives in [`CLAUDE.md`](CLAUDE.md) — read it in full before acting, and follow its "Setup Wizard" section start-to-finish. Treat that file as canonical; this README is only the entry point.
 
 Non-negotiables:
-- Use `gh repo create --template <this-repo> --public <name> --clone`. Never `git clone` or `fork`.
+- Use `gh repo create --template kalarikkalmathew-cmyk/ai-resume --public <name> --clone`. Never `git clone` or `fork`.
 - Preflight with `npm install` then `npm run doctor` before starting the wizard. Pre-wizard fails on `.env` / `setup-config.json` / `resume.md` are expected. Any other fail — stop.
 - The resume step is a draft → critique → refine coaching loop, not a one-shot. Push back on vague verbs and missing metrics.
 - Ask user which API provider they want (Anthropic or Groq), validate the key format, set the appropriate env var in both `.env` AND Netlify env vars. Missing either is the #1 failure mode.
@@ -81,35 +79,35 @@ If your user hasn't pasted the prompt yet, show them the "Paste this one prompt"
 
 ```
 ┌─ Header ────────────────────────────┐
-│ ac. Alex Chen             [in] [✉]  │
+│ mk. Your Name            [in] [✉]   │
 ├─────────────────────────────────────┤
 │                                     │
 │ ┌─ Card ─────────────────────────┐ │
-│ │ Design System v3            ›  │ │   whole card is a button
-│ │ 400+ teams adopted              │ │   chevron in corner
+│ │ Project Name              ›  │ │   whole card is a button
+│ │ 40% improvement               │ │   chevron in top-right
 │ └─────────────────────────────────┘ │
 │ ┌─ Card ─────────────────────────┐ │
-│ │ Checkout Redesign           ›  │ │
-│ │ +12% conversion lift            │ │
+│ │ Another Project           ›  │ │
+│ │ +12% conversion                │ │
 │ └─────────────────────────────────┘ │
 │                                     │
-│ ask me anything about Alex's        │
-│ career.                             │
+│ ask me anything about your         │
+│ career.                            │
 │                                     │
-│ [what does Alex do?] [why hire?]    │
+│ [what did they build?] [why hire?] │
 │                                     │
 ├─────────────────────────────────────┤
-│ [Ask me about Alex...       ] [↑]   │
+│ [Ask me about you...        ] [↑]  │
 └─────────────────────────────────────┘
 ```
 
-Cards first (project + metric, no clutter). Greeting below. Suggestion chips. Then conversation.
+Cards first (title + metric, no company names). Greeting below. Suggestion chips. Then conversation.
 
 **Cards come back in conversation.** When a recruiter asks a list-type question ("show me her ML work", "what else has she shipped?"), the AI answers with 2-3 inline cards instead of prose. Same visual grammar. The recruiter never reads a wall of text to find proof. This is the product differentiator.
 
 ## The differentiator you don't see on screen
 
-The setup wizard is not a form. It's a coaching loop. You paste a rough resume, the wizard critiques it (vague bullets, missing metrics, weak verbs), you refine, repeat. Then the wizard generates a system prompt, runs 12 behavioral tests across 4 Groq models, reads the failures, proposes targeted prompt edits, re-runs, and keeps a best-so-far snapshot until the tests pass. You watch it happen.
+The setup wizard is not a form. It's a coaching loop. You paste a rough resume, the wizard critiques it (vague bullets, missing metrics, weak verbs), you refine, repeat. Then the wizard generates a system prompt, runs 12 behavioral tests against your chosen AI provider, reads the failures, proposes targeted prompt edits, re-runs, and keeps a best-so-far snapshot until the tests pass. You watch it happen.
 
 That loop is what makes this template worth using over a static HTML file — you're not buying a template, you're buying a workflow.
 
@@ -127,7 +125,7 @@ This fork adds:
 
 ## Design
 
-Linear-inspired design system. Inter font, 8px grid, tight border-radius, dark palettes, 150ms transitions. Four curated palettes + custom. WCAG AA validated.
+Linear-inspired design system. Inter font, 8px grid, tight border-radius, dark palettes, 150ms transitions. Five curated palettes + custom. WCAG AA validated.
 
 | Palette | Vibe |
 |---------|------|
@@ -135,24 +133,24 @@ Linear-inspired design system. Inter font, 8px grid, tight border-radius, dark p
 | `deep-ocean` | Navy depths, electric cyan highlights |
 | `obsidian-rose` | Cool charcoal, dusty rose warmth |
 | `slate-mint` | Cool slate, fresh mint energy |
+| `warm-editorial` | Warm cream, deep amber accents |
 
 ## Architecture
 
 ```
-resume.md ──[Claude Code wizard]──→ system-prompt.md
-                                 → setup-config.json (welcome + full highlights, skills, links)
-                                 → setup.js → index.html (chat + cards + JSON-LD)
-                                            → ai-resume.json (agent endpoint)
-                                            → manifest.json (PWA)
-                                 → eval-prompt.mjs (12 tests × 2 models, +eval-custom.json)
-                                 → .github/workflows/eval.yml (CI on PR)
+resume.md ──[AI wizard]──→ system-prompt.md
+                       → setup-config.json (highlights, chips, provider)
+                       → setup.js → index.html (chat + cards + JSON-LD)
+                                  → ai-resume.json (agent endpoint)
+                                  → manifest.json (PWA)
+                                  → netlify/functions/groqHandler.mjs
 ```
 
 - **index.html** — Single-file chat UI. Zero deps. Mobile-first. Welcome cards, inline `[CARD:...]` parser for conversation cards, streaming SSE, skeleton loading, PWA.
-- **groqHandler.mjs** — Netlify function. 2-model Llama cascade on rate limit, injection filter, SSE streaming, CORS.
+- **groqHandler.mjs** — Netlify function. Supports Anthropic (recommended) or Groq. Injection filter, SSE streaming, CORS.
 - **setup.js** — Config-driven multi-file generator. Welcome cards HTML, JSON-LD, PWA manifest, OG tags, agent endpoint. HARD ERROR on missing FULL_HIGHLIGHTS markers. Atomic writes.
-- **eval-prompt.mjs** — 12 behavioral tests × 2 models, with custom tests from `eval-custom.json` if present. Exponential backoff on 429s. `--all-models`, `--model=`, `--custom-only` flags.
-- **scripts/check-models.mjs** — Fails fast if Groq deprecated any cascade model.
+- **eval-prompt.mjs** — 12 behavioral tests, with custom tests from `eval-custom.json` if present. `--custom-only` flag for running only custom tests.
+- **scripts/check-models.mjs** — Fails fast if the selected provider's model is unavailable.
 - **scripts/doctor.mjs** — One-command install health: Node version, `.env` key format, config validity, marker integrity, PII scan on `resume.md`.
 - **ai-resume.json** — Schema.org Person endpoint for agent-to-agent communication.
 
@@ -179,9 +177,9 @@ resume.md ──[Claude Code wizard]──→ system-prompt.md
 ## Tech
 
 - **Frontend:** Vanilla HTML/CSS/JS. Zero framework, zero build step.
-- **AI:** Groq free tier (2 Llama models — `llama-3.1-8b-instant` primary, `llama-3.3-70b-versatile` fallback on rate limit)
+- **AI:** Anthropic (recommended) or Groq free tier
 - **Hosting:** Netlify free tier (static + one serverless function)
-- **CI:** GitHub Actions running the 12-test eval on every PR
+- **CI:** GitHub Actions running the 12-test eval on every PR (optional)
 - **Cost:** $0/month to run
 
 ## Full spec
