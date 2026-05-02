@@ -108,6 +108,23 @@ function parseResume(markdown) {
 const docDefinition = {
   pageSize: 'A4',
   pageMargins: [40, 40, 40, 40],
+  header: function(currentPage) {
+    if (currentPage !== 1) return {};
+    return {
+      text: [
+        { text: 'Chat with me → ', color: GRAY, font: 'LexendLight', fontSize: 8 },
+        {
+          text: 'kalarikkalmathew-cmyk-ai-resume.netlify.app',
+          color: '#B38B4D',
+          font: 'LexendLight',
+          fontSize: 8,
+          link: 'https://kalarikkalmathew-cmyk-ai-resume.netlify.app',
+        },
+      ],
+      alignment: 'right',
+      margin: [40, 18, 40, 0],
+    };
+  },
   defaultStyle: { font: 'LexendLight', fontSize: 9, lineHeight: 1.6, color: TEXT },
   styles: {
     h1:            { font: 'LexendBold',  fontSize: 18, color: TEXT, lineHeight: 1.2 },
