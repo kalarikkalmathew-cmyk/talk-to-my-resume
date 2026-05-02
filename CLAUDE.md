@@ -2,6 +2,18 @@
 
 Personal AI agent page for job seekers. Chat-first landing page where recruiters talk to an AI that knows your career.
 
+## Quick start for new users
+
+Want to set up your own AI resume? Start here:
+
+1. **Create your repo:** `gh repo create --template <this-repo> --public <your-name>-ai-resume --clone`
+2. **Read the README:** Open README.md and paste the prompt into Claude Code / Codex / OpenCode
+3. **Follow the wizard:** The AI will walk you through setup, eval, and deploy
+
+The wizard handles everything — you just answer questions about your career.
+
+---
+
 ## Project Status
 
 **Phase: v1 deployed (2026-04-20).** Live demo at https://ai-resume-demo.netlify.app. Landing page on agamarora.com + user validation are next.
@@ -136,11 +148,19 @@ Print the flags back. Propose specific rewrites inline. Example: "Bullet 3 says 
 
 **Pass 3 (refine).** User accepts, modifies, or writes "ship it." Rewrite `resume.md`. If they have fewer than 3 bullets with digits across the whole resume, STOP. Do not proceed. Push harder. "The HIRE eval will fail on a zero-metric resume every time, no matter what we do in step 6. Let's find 3 numbers before we keep going."
 
-### Step 2 — API key (reordered UP — coaching loop needs it)
+### Step 2 — API provider (reordered UP — coaching loop needs it)
 
-Ask for their Groq API key (`gsk_...`). Write `.env`. Validate: the key must match `/^gsk_[A-Za-z0-9]+$/`. No quotes. No spaces. If they paste with quotes around it, strip them.
+Ask the user which API provider they want to use:
+- **Anthropic** (recommended) — `ANTHROPIC_API_KEY`, starts with `sk-`
+- **Groq** — `GROQ_API_KEY`, starts with `gsk_`
 
-Why this is step 2 and not step 5: step 6 runs evals in a loop. Evals need Groq. Move key collection up so step 6 doesn't block.
+Write the appropriate key to `.env`. Validate the format:
+- Anthropic: must start with `sk-ant-`
+- Groq: must match `/^gsk_[A-Za-z0-9]+$/`
+
+Add `provider` to `setup-config.json`: `"anthropic"` or `"groq"`. This determines which LLM powers the resume.
+
+Why this is step 2 and not step 5: step 6 runs evals in a loop. Evals need an API key. Move key collection up so step 6 doesn't block.
 
 ### Step 3 — Highlights (two lists, metric-first)
 
@@ -164,7 +184,7 @@ Critical: the file you write **MUST** have `<!-- BEGIN:FULL_HIGHLIGHTS -->` and 
 Collect: name, title, palette (midnight-gold / deep-ocean / obsidian-rose / slate-mint / custom), initials, domain, LinkedIn, GitHub, email, pronoun. Write `setup-config.json`. Then:
 
 ```bash
-npm run check-models   # fail-fast if Groq deprecated a cascade model
+npm run check-models   # fail-fast if the selected provider deprecated models
 npm run setup          # hydrate index.html + groqHandler.mjs from templates/, sync full_highlights block
 ```
 

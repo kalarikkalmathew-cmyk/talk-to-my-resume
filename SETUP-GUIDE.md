@@ -19,10 +19,12 @@ Live demo: **https://ai-resume-demo.netlify.app** (fictional persona)
 You need:
 - **Node.js 18+** — check with `node --version`
 - **Netlify CLI** — `npm install -g netlify-cli`
-- A **Groq account** — sign up at https://console.groq.com, create a key (starts with `gsk_`)
+- An **Anthropic or Groq account** — 
+  - Anthropic: sign up at https://console.anthropic.com, create a key (starts with `sk-`)
+  - Groq: sign up at https://console.groq.com, create a key (starts with `gsk_`)
 - A **Netlify account** — sign up at https://app.netlify.com
 - Your **resume** — as text, a PDF, or just your LinkedIn URL
-- **~30 minutes**
+- **~30-45 minutes**
 
 ---
 
@@ -197,12 +199,18 @@ Your project folder should now have:
 
 ## Step 4 — Add your API key
 
-Create a file named `.env` in the project folder (no extension). Paste this, replacing the placeholder:
+Create a file named `.env` in the project folder (no extension). Choose your provider:
 
+**Anthropic (recommended):**
+```
+ANTHROPIC_API_KEY=sk-ant-your_actual_key_here
+```
+Get your key at https://console.anthrop.com/keys. It must start with `sk-ant-`.
+
+**Groq:**
 ```
 GROQ_API_KEY=gsk_your_actual_key_here
 ```
-
 Get your key at https://console.groq.com/keys. It must start with `gsk_`.
 
 ---
@@ -244,13 +252,14 @@ If the AI references your actual career, you're good. If it says "Alex Chen" or 
 ```bash
 netlify login                                           # opens browser, sign in
 netlify init                                            # create new site, accept auto-name
-netlify env:set GROQ_API_KEY gsk_your_actual_key_here   # same key from .env
+netlify env:set ANTHROPIC_API_KEY sk-ant-your_key_here   # or GROQ_API_KEY if using Groq
 ```
 
 After `netlify init`, Netlify gives you a URL like `weird-words-abc123.netlify.app`. **Update your config with this URL:**
 
 1. Edit `setup-config.json` → change `"domain"` from `"localhost:8888"` to your Netlify URL (without `https://`, e.g. `"weird-words-abc123.netlify.app"`)
-2. Re-run `node setup.js` (this regenerates the CORS allow-list)
+2. Add `"provider": "anthropic"` (or `"groq"`) to setup-config.json
+3. Re-run `node setup.js` (this regenerates the CORS allow-list)
 3. Now deploy:
 
 ```bash
@@ -277,10 +286,10 @@ Visit your Netlify URL. Check:
 
 | Problem | Fix |
 |---|---|
-| `"Check your API key"` error | Key must start with `gsk_`. Get a new one at console.groq.com/keys. Make sure it's in BOTH `.env` AND Netlify env vars. |
-| `"Try again in a moment"` | Groq rate limit. Wait 60 seconds. |
+| `"Check your API key"` error | For Anthropic: key must start with `sk-ant-`. For Groq: key must start with `gsk_`. Get a new one at console.anthropic.com or console.groq.com. Make sure it's in BOTH `.env` AND Netlify env vars. |
+| `"Try again in a moment"` | Rate limit. Wait 60 seconds. |
 | `netlify: command not found` | `npm install -g netlify-cli` |
-| Works locally, not in production | You didn't run `netlify env:set GROQ_API_KEY`. Or: you didn't update `domain` in setup-config.json + re-run setup.js before deploy → CORS is rejecting the prod origin. |
+| Works locally, not in production | You didn't set the API key in Netlify env vars. Or: you didn't update `domain` and `provider` in setup-config.json + re-run setup.js before deploy → CORS is rejecting the prod origin. |
 | Cards don't appear in chat | Your `full_highlights` list is empty in `setup-config.json`. Add 4+ highlights and re-run `node setup.js`. |
 | AI uses wrong name / career | Your `system-prompt.md` still has the demo persona. Ask your AI to rewrite it from your resume. |
 | JSON parse error from `setup.js` | Your `setup-config.json` has a syntax error. Paste it into jsonlint.com to find the issue. |

@@ -47,6 +47,8 @@ function validate(config) {
   const fh = config.resume?.full_highlights;
   if (fh && (!Array.isArray(fh) || fh.length > 16))
     errors.push("resume.full_highlights: must be an array of 0-16 items");
+  if (config.provider && !["anthropic", "groq"].includes(config.provider))
+    errors.push("provider: must be 'anthropic' or 'groq' (defaults to anthropic)");
   return errors;
 }
 
@@ -632,6 +634,8 @@ try {
     "{{DEMO_CHIP_HTML}}": config.demo_mode
       ? `<button type="button" class="demo-chip" aria-label="Make your own AI resume using this template">Make yours</button>`
       : "",
+    "{{PROVIDER}}": config.provider || "anthropic",
+    "{{API_KEY_ENV}}": (config.provider === "groq") ? "GROQ_API_KEY" : "ANTHROPIC_API_KEY",
   };
 
   // 7. Apply replacements in memory

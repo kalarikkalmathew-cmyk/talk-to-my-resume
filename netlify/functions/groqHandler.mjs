@@ -23,6 +23,10 @@ const ALLOWED_ORIGINS = new Set([
   "https://kalarikkalmathew-cmyk-ai-resume.netlify.app",
 ]);
 
+// anthropic — replaced by setup.js (anthropic or groq)
+const PROVIDER = "anthropic";
+const API_KEY = process.env.ANTHROPIC_API_KEY;
+
 function isOriginAllowed(origin) {
   if (!origin) return true; // Same-origin requests (Samsung Internet strips Origin header)
   if (ALLOWED_ORIGINS.has(origin)) return true;
@@ -89,6 +93,114 @@ function looksLikeJobFitAnalysis(text) {
   return text.split("\n").length >= 6 && text.length >= 400;
 }
 
+function buildAnthropicRequest(system, messages) {
+  return fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": API_KEY,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      system,
+      messages,
+      max_tokens: MAX_TOKENS,
+      stream: true,
+    }),
+  });
+}
+
+function buildGroqRequest(system, messages) {
+  return fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "llama-3.1-8b-instant",
+      messages: [{ role: "system", content: system }, ...messages],
+      max_tokens: MAX_TOKENS,
+      stream: true,
+    }),
+  });
+}
+
+function pipeAnthropicSSE(apiRes, controller) {
+  const reader = apiRes.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const data = line.slice(6).trim();
+        if (data === "[DONE]") continue;
+        try {
+          const ev = JSON.parse(data);
+          if (
+            ev.type === "content_block_delta" &&
+            ev.delta?.type === "text_delta" &&
+            ev.delta.text
+          ) {
+            controller.enqueue(
+              new TextEncoder().encode(`data: ${JSON.stringify({ text: ev.delta.text })}\n\n`)
+            );
+          }
+        } catch { /* skip malformed lines */ }
+      }
+    }
+    controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+    controller.close();
+  } catch (err) {
+    controller.enqueue(
+      new TextEncoder().encode(`data: ${JSON.stringify({ error: err.message })}\n\n`)
+    );
+    controller.close();
+  }
+}
+
+function pipeGroqSSE(apiRes, controller) {
+  const reader = apiRes.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const data = line.slice(6).trim();
+        if (data === "[DONE]") continue;
+        try {
+          const ev = JSON.parse(data);
+          if (ev.choices?.[0]?.delta?.content) {
+            controller.enqueue(
+              new TextEncoder().encode(`data: ${JSON.stringify({ text: ev.choices[0].delta.content })}\n\n`)
+            );
+          }
+        } catch { /* skip malformed lines */ }
+      }
+    }
+    controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+    controller.close();
+  } catch (err) {
+    controller.enqueue(
+      new TextEncoder().encode(`data: ${JSON.stringify({ error: err.message })}\n\n`)
+    );
+    controller.close();
+  }
+}
+
 export default async function handler(req) {
   const origin = req.headers.get("origin") || "";
   const cors = corsHeaders(origin);
@@ -146,69 +258,24 @@ export default async function handler(req) {
     }
     messages.push({ role: "user", content: input });
 
-    const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        system,
-        messages,
-        max_tokens: MAX_TOKENS,
-        stream: true,
-      }),
-    });
+    const isGroq = PROVIDER === "groq";
+    const apiRes = isGroq ? buildGroqRequest(system, messages) : buildAnthropicRequest(system, messages);
 
     if (!apiRes.ok) {
       const err = await apiRes.json().catch(() => ({}));
-      console.error("Anthropic API error:", apiRes.status, err);
+      console.error(`${isGroq ? "Groq" : "Anthropic"} API error:`, apiRes.status, err);
       return new Response(
-        JSON.stringify({ error: "API unavailable. Check your ANTHROPIC_API_KEY." }),
+        JSON.stringify({ error: `API unavailable. Check your ANTHROPIC_API_KEY.` }),
         { status: 503, headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
 
-    // Pipe Anthropic SSE → our SSE format (frontend stays unchanged)
     const readable = new ReadableStream({
       async start(controller) {
-        const reader = apiRes.body.getReader();
-        const decoder = new TextDecoder();
-        let buf = "";
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buf += decoder.decode(value, { stream: true });
-            const lines = buf.split("\n");
-            buf = lines.pop();
-            for (const line of lines) {
-              if (!line.startsWith("data: ")) continue;
-              const data = line.slice(6).trim();
-              if (data === "[DONE]") continue;
-              try {
-                const ev = JSON.parse(data);
-                if (
-                  ev.type === "content_block_delta" &&
-                  ev.delta?.type === "text_delta" &&
-                  ev.delta.text
-                ) {
-                  controller.enqueue(
-                    new TextEncoder().encode(`data: ${JSON.stringify({ text: ev.delta.text })}\n\n`)
-                  );
-                }
-              } catch { /* skip malformed lines */ }
-            }
-          }
-          controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
-          controller.close();
-        } catch (err) {
-          controller.enqueue(
-            new TextEncoder().encode(`data: ${JSON.stringify({ error: err.message })}\n\n`)
-          );
-          controller.close();
+        if (isGroq) {
+          pipeGroqSSE(apiRes, controller);
+        } else {
+          pipeAnthropicSSE(apiRes, controller);
         }
       },
     });
