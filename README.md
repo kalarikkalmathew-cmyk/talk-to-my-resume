@@ -13,6 +13,14 @@ Same career. Both readers served. Replaces the PDF, not the LinkedIn.
 
 **[See it live →](https://kalarikkalmathew-cmyk-ai-resume.netlify.app)** · `curl https://kalarikkalmathew-cmyk-ai-resume.netlify.app/.well-known/ai-resume.json`
 
+## Why I built this
+
+I got tired of recruiters scanning my PDF, missing the actual impact of my work, and passing because a keyword didn't match. The first reader of your resume is almost always an AI now — ATS systems, LinkedIn Recruiter, Workday — and PDFs can't answer follow-up questions or prove a claim.
+
+So I built an AI resume that talks to recruiters the same way I would. It shows proof cards upfront, answers questions in my voice, and surfaces specific metrics when asked. The AI endpoint also makes my career machine-queryable for sourcing agents.
+
+Built with Claude Code in about 30 minutes. The template does all the heavy lifting — you just answer questions about your career.
+
 ## Get your own
 
 Open Claude Code. Paste this one prompt:
