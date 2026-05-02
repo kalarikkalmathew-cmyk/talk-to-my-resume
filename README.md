@@ -1,4 +1,4 @@
-# ai-resume
+# Talk to My Resume 
 
 **Your next recruiter is an AI. Your resume should be too.**
 
