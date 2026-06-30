@@ -12,7 +12,7 @@
     "version": "2.0",
     "availability": "open",
     "contactPreference": "email",
-    "chatEndpoint": "/.netlify/functions/groqHandler",
+    "chatEndpoint": "/api/chat",
     "highlights": [
       {
         "title": "the work",

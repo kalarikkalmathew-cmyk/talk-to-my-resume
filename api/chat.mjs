@@ -3,6 +3,7 @@ import { join } from "path";
 
 let SYSTEM_PROMPT, SYSTEM_REMINDER;
 try {
+  // system-prompt.md is bundled via vercel.json -> functions.includeFiles
   const raw = readFileSync(join(process.cwd(), "system-prompt.md"), "utf8");
   const mainMatch = raw.match(/# System Prompt\n([\s\S]*?)## Reminder/);
   SYSTEM_PROMPT = mainMatch ? mainMatch[1].trim() : raw;
@@ -18,13 +19,16 @@ const MAX_INPUT_LENGTH = 12000;
 const MAX_HISTORY_MSG_LENGTH = 1200;
 const MAX_TOKENS = 2048;
 
-// https://kalarikkalmathew-cmyk-ai-resume.netlify.app — replaced by setup.js
-const ALLOWED_ORIGINS = new Set([
-  "https://kalarikkalmathew-cmyk-ai-resume.netlify.app",
-]);
+// Production origin for cross-origin (agent-to-agent) access. Same-origin
+// requests from the resume UI work regardless of this list.
+// TODO: set to the final Vercel domain once the project is created.
+const ALLOWED_ORIGINS = new Set(
+  [
+    process.env.PUBLIC_ORIGIN, // e.g. https://talk-to-my-resume.vercel.app
+  ].filter(Boolean)
+);
 
-// anthropic — replaced by setup.js (anthropic or groq)
-const PROVIDER = "anthropic";
+const PROVIDER = "anthropic"; // anthropic or groq
 const API_KEY = process.env.ANTHROPIC_API_KEY;
 
 function isOriginAllowed(origin) {
@@ -33,6 +37,7 @@ function isOriginAllowed(origin) {
   try {
     const hostname = new URL(origin).hostname;
     if (hostname === "localhost" || hostname === "127.0.0.1") return true;
+    if (hostname.endsWith(".vercel.app")) return true; // preview + prod deploys
   } catch { /* invalid origin */ }
   return false;
 }
@@ -127,7 +132,7 @@ function buildGroqRequest(system, messages) {
   });
 }
 
-function pipeAnthropicSSE(apiRes, controller) {
+async function pipeAnthropicSSE(apiRes, controller) {
   const reader = apiRes.body.getReader();
   const decoder = new TextDecoder();
   let buf = "";
@@ -166,7 +171,7 @@ function pipeAnthropicSSE(apiRes, controller) {
   }
 }
 
-function pipeGroqSSE(apiRes, controller) {
+async function pipeGroqSSE(apiRes, controller) {
   const reader = apiRes.body.getReader();
   const decoder = new TextDecoder();
   let buf = "";
@@ -201,19 +206,17 @@ function pipeGroqSSE(apiRes, controller) {
   }
 }
 
-export default async function handler(req) {
-  const origin = req.headers.get("origin") || "";
+export async function OPTIONS(request) {
+  const origin = request.headers.get("origin") || "";
+  return new Response(null, { status: 204, headers: corsHeaders(origin) });
+}
+
+export async function POST(request) {
+  const origin = request.headers.get("origin") || "";
   const cors = corsHeaders(origin);
 
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: cors });
-  }
-  if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405, headers: cors });
-  }
-
   try {
-    const body = await req.json();
+    const body = await request.json();
     const input = String(body.input || "").trim().slice(0, MAX_INPUT_LENGTH);
     if (!input) {
       return new Response(JSON.stringify({ error: "Empty input" }), {
@@ -259,7 +262,7 @@ export default async function handler(req) {
     messages.push({ role: "user", content: input });
 
     const isGroq = PROVIDER === "groq";
-    const apiRes = isGroq ? buildGroqRequest(system, messages) : buildAnthropicRequest(system, messages);
+    const apiRes = await (isGroq ? buildGroqRequest(system, messages) : buildAnthropicRequest(system, messages));
 
     if (!apiRes.ok) {
       const err = await apiRes.json().catch(() => ({}));
@@ -271,7 +274,7 @@ export default async function handler(req) {
     }
 
     const readable = new ReadableStream({
-      async start(controller) {
+      start(controller) {
         if (isGroq) {
           pipeGroqSSE(apiRes, controller);
         } else {
