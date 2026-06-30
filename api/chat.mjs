@@ -17,7 +17,7 @@ try {
 
 const MAX_INPUT_LENGTH = 12000;
 const MAX_HISTORY_MSG_LENGTH = 1200;
-const MAX_TOKENS = 2048;
+const MAX_TOKENS = 1024; // output ceiling (guardrail against runaway/abuse outputs)
 
 // Production origin for cross-origin (agent-to-agent) access. Same-origin
 // requests from the resume UI work regardless of this list.
@@ -232,10 +232,13 @@ export async function POST(request) {
       });
     }
 
-    // Build system string (Anthropic takes system as a top-level field, not a message)
-    const systemParts = [SYSTEM_PROMPT];
+    // System prompt: the large, stable SYSTEM_PROMPT is the cached prefix; the
+    // volatile tail (fit-analysis hint + reminder) follows uncached. Caching the
+    // ~6K-token prefix cuts repeat input cost ~90% on follow-up turns within a
+    // conversation (Anthropic ephemeral cache, 5-min TTL, no beta header).
+    const tailParts = [];
     if (looksLikeJobFitAnalysis(input)) {
-      systemParts.push(
+      tailParts.push(
         [
           "This is a recruiter fit-analysis request.",
           "Break the answer into: role summary, Mathew profile, overlap/synergies, gaps or risks, verdict, and what more Mathew can bring to the table.",
@@ -244,8 +247,17 @@ export async function POST(request) {
         ].join(" ")
       );
     }
-    if (SYSTEM_REMINDER) systemParts.push(SYSTEM_REMINDER);
-    const system = systemParts.join("\n\n");
+    if (SYSTEM_REMINDER) tailParts.push(SYSTEM_REMINDER);
+    const tail = tailParts.join("\n\n");
+
+    // Anthropic: structured blocks with cache_control on the stable prefix.
+    const systemBlocks = [
+      { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+    ];
+    if (tail) systemBlocks.push({ type: "text", text: tail });
+
+    // Groq: plain system string (no caching API).
+    const systemText = [SYSTEM_PROMPT, tail].filter(Boolean).join("\n\n");
 
     // Build messages array — Anthropic only allows user/assistant roles
     const history = Array.isArray(body.history) ? body.history.slice(-6) : [];
@@ -262,7 +274,7 @@ export async function POST(request) {
     messages.push({ role: "user", content: input });
 
     const isGroq = PROVIDER === "groq";
-    const apiRes = await (isGroq ? buildGroqRequest(system, messages) : buildAnthropicRequest(system, messages));
+    const apiRes = await (isGroq ? buildGroqRequest(systemText, messages) : buildAnthropicRequest(systemBlocks, messages));
 
     if (!apiRes.ok) {
       const err = await apiRes.json().catch(() => ({}));
